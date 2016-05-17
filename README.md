@@ -1,7 +1,4 @@
-# wren
-Scripting language
-
-wren `<*(~)`
+wren <*(~)
 ===========
 
 A scripting language for web authoring.
