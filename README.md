@@ -111,11 +111,11 @@ For now, assignment is sort of an operator that works, but allows a bunch of stu
 
 Another thought: how will we declare constants? It needs to happen in two places: in assignments, such as:
 
-	const CLASS_LABEL = 'lbl'
+	const CLASS-LABEL = 'lbl'
 	
 and also needs to be possible when we set properties on an object.
 
-	myobject = ( const 'CLASS_LABEL' : 'lbl', const 'CLASS_INPUT' : 'inp' ) // or something like that
+	myobject = ( const 'CLASS-LABEL' : 'lbl', const 'CLASS-INPUT' : 'inp' ) // or something like that
 
 	statement :: expression
 	statement :: loop-statement | branch-statement | labeled-statement | control-transfer-statement | defer-statement
@@ -159,7 +159,7 @@ Do we allow assignment to be an operator that returns a value? That is how it wo
 	
 Do we to allow any expression as condition-clauses? or only those that return boolean values? PHP has a broad set of things it will consider `false`, including empty strings, empty arrays, zero; whereas Lua only considers `false` and `nil` to be false and all those others are considered true. How do we handle a condion-clause that evaluates to an array? Do all the members of the array have to be true to continue?
 
-Maybe we say: whatever expression is there in the condiction clause will be cast (coerced) to a boolean, and there is a set of rules that control that. Maybe for an array, the first item of the array is used to determine the boolean.
+Maybe we say: whatever expression is there in the condition clause will be cast (coerced) to a boolean, and there is a set of rules that control that. Maybe for an array, the first item of the array is used to determine the boolean.
 
 Types
 -----------
@@ -178,7 +178,7 @@ Those 5 simple types, together with the `Function` type, are scalars, whereas th
 
 ### Arrays
 
-To create an array use parenthesis (or not, it is really the comma that denotes an array -- the parenthesis are needed mostly as delimiters because of operator precedence). An array can be a simple list of other types, with an automatic index that starts at 0. Or it can be more like a dictionary with keys and values, separate by colons and commas. Keys in this case would be `String` types. An array can also be a mix of the two. Key expressions that don't resolve to strings will emit a warning. Entries with keys can be accessed by their key or by their position within the array. Positions are zero-based.
+To create an array use parenthesis (or not, it is really the comma that denotes an array -- the parenthesis are needed mostly as delimiters because of operator precedence). An array can be a simple list of other types, with an automatic index that starts at 0. Or it can be more like a dictionary with keys and values, separate by colons and commas. Keys in this case would be `String` types. An array can also be a mix of the two. Key expressions that don't resolve to strings will emit a warning. _What about key expressions that resolve to Integer? Or will they be coerced to Strings?_ Entries with keys can be accessed by their key or by their position within the array. Positions are zero-based.
 
 	employee = ( 'first' : 'mike', 'last' : 'weaver', 'empl-id' : 1234, 10.5 )
 	
@@ -205,11 +205,9 @@ Multiple items can be accessed using multiple items in the subscript, separated 
 	cutoffs[0, 2] // the results here will not have keys associated with them, just the indices 0 and 1
 	employee['first', 'empl-id']
 
-The two expressions above, instead of returning a single item from the original array, will each return an array with two items. Integer indices in the returned array will be rest to 0, but string keys will be preserved from the original.
+The two expressions above, instead of returning a single item from the original array, will each return an array with two items. Integer indices in the returned array will be reset to 0, but string keys will be preserved from the original.
 
-TODO: need a syntax for ranges, maybe something like Swift's ... and ..< operators.
-
-But that functionality is really not needed, because what you put inside backticks works just as well inside square brackets.
+TODO: need a syntax for ranges, maybe something like Swift's ... and ..< operators. <-- don't need syntax for that. It would be implemented by something that evaluates to an array of indices.
 
 ### Functions
 
@@ -225,42 +223,42 @@ Calling the function is accomplished by appending an array to the name of the fu
 
 If you are constructing an object on the fly to serve as the arguments, you can use the syntax above, which reads more like a traditional function call. But it is shortcut for this operator `->` which composes an array with a function. The `->` operator is needed when you are not declaring literals, but are composing `Array` expressions and `Function` expressions (which could be, for example, variables):
 
-	simple_add('num': 7)
-	('num': 10) ->  simple_add
+	simpleAdd('num': 7)
+	('num': 10) ->  simpleAdd
 	args = ('num': 8)
 	args -> simple_add
 	args -> { return num + 6 }
 
 The operator wants the argument array first so that function calls can be chained. Here are some more examples before we get to chaining.
 
-	foo = ( 5, 7 ) -> { return _[0] + _[1] }
+	foo = ( 5, 7 ) -> { return $args[0] + $args[1] } //_Which has higher precedence? composing or assignment?_
 	//or
 	args = ( 5, 7)
-	adder = { return _[0] + _[1] }
+	adder = { return $args[0] + $args[1] }
 	bar = args -> adder
 
-TODO: probably also want some magic variables for indices, like `$0` and `$1`. I'm also thinking `$_` will be the array of the arguments, and `$this` will be the array object that the function is a member of, if indeed the function is a member. Otherwise that would just be nil.
+TODO: probably also want some magic variables for indices, like `$0` and `$1`. I'm also thinking `$args` will be the array of the arguments, and `$this` will be the array object that the function is a member of, if indeed the function is a member. Otherwise that would just be nil.
 
-Some functions don't need named parameters, so a simple array object can be provided. Internally, the function refers to the arguments with an automatic variable `$_` (that's an underscore).
+Some functions don't need named parameters, so a simple array object can be provided. Internally, the function refers to the arguments with an automatic variable `$args` (that's an underscore).
 
-	sum_all = {
+	sumAll = {
 		tally = 0
-		for i in $_ {
+		for i in $args {
 			tally += i
 		}
 		return tally
 	}
 
-	sum_all(1, 2, 3, 4) // returns 10
+	sumAll(1, 2, 3, 4) // returns 10
 	// or
 	sum = {
-		head, tail = $_
+		head, tail = $args
 		if tail is null { return head }
 		else { return head + tail -> sum }
 	}
 	// or
 	sum = {
-		head, tail = $_
+		head, tail = $args
 		if head is null { return 0 }
 		else { return ( head is Numeric ? head : 0 ) + tail -> sum ) }
 	}
@@ -277,24 +275,24 @@ For this case we have a shortcut syntax using the tilde (`~`):
 	// or
 	a = ( ~key, ~value)
 
-A function can explicitly return a value, using the return statement. Or it can implicitly return the (possibly modified) parameter array it was given. Inside the function, the parameter array can be explicitly referred to (and modified) with $_ (that's an underscore).
+A function can explicitly return a value, using the return statement. Or it can implicitly return the (possibly modified) parameter array it was given. Inside the function, the parameter array can be explicitly referred to (and modified) with $args (that's an underscore).
 
 	transformer = {
-		if name is null { $_.name = 'button' }
+		if name is null { $args.name = 'button' }
 	}
 
-	( 'id' : 'my-button', 'type' : 'input' ) -> transformer -> print_all
+	( 'id' : 'my-button', 'type' : 'input' ) -> transformer -> printAll
 
 The above passes the object to transformer, which inserts a 'name' key (if it doesn't exist already) and explicitly returns that new object which is passed along to the next function.
 
-	transformer_redux = {
+	transformerRedux = {
 		a = 'button'
-		if name is null { $_.name = a }
+		if name is null { $args.name = a }
 	}
 
-In this version, the internal variable 'a' does not become part of the implicit argument object. It takes the underscore `$_` to access it and to make changes to it. It would be equivalent to end the above function with
+In this version, the internal variable 'a' does not become part of the implicit argument object. It takes the underscore `$args` to access it and to make changes to it. It would be equivalent to end the above function with
 
-	return $_
+	return $args
 
 That is implicitly done if there is no return statement.
 
@@ -335,7 +333,7 @@ So here is how this function from PHP would look in wren:
 	// in wren
 	addButtons : {
 		composer.beginElement('name' : 'p')
-		for item in _ { // what's implied here is ( 'item' : item) -> {
+		for item in $args { // what's implied here is ( 'item' : item) -> {
 			type not null or type = 'submit'
 			name not null or name = KEY_ACTION::self
 			id not null or id = name + '-' + action
@@ -363,7 +361,7 @@ Let's look at the function that the one above relies on, it is getElement in the
 
 This `->` operator is important. It is how we compose argument arrays and functions, and also how we create subclasses.
 
-	shape = {
+	shape = (
 		'name' : ''
 		'area' : { return 0.0 }
 		'description' : {
@@ -382,3 +380,64 @@ In the above code, an object is created and stored in the variable `shape`. Then
 
 Talk about subscripts, which is a way to get to the ::self and ::super versions of a variable. There might also need to be a ::call or ::outer.  Or ::builtin. If a function is defined as a member of an array, it should have acceess to the properties of the array when it is called, without needing extra syntax. Does that stay in sync with how access to other variables work? Need to think about how scope rules work.
 
+Composing can be chained: firstArray -> secondArray -> myFunc means both arrays will end up being sent as args to the functin `myFunc`
+
+What do you get when you compose different things?
+
+	myArray -> anotherArray // This returns an array that contains elements from both `myArray` and `anotherArray`. For any keys that are the same, they are organized into an inheritance relationship
+	
+	anArray -> aFunction // this calls the function with `anArray` as the $args implicit
+
+	anArray -> map(mapFunc) // anArray -> (mapFunc) -> map  // So how does map refer it its inputs? first `anArray` is composed with `(mapFunc)` so mapFunc is scoped behind anArray? then map sees that as $args?
+	
+	maybe it is implicit with numbers: anArray -> map(mapFunc) ==> anArray -> (mapFunc) -> map ==> anArray<1> -> (mapFunc)<0> -> map
+	
+	then the map is implemented this way:
+	
+	map = {
+		for item in $args<1> { item -> $args[0] }
+	}
+	
+	and maybe $0 is shortcut for $args[0] and of course $args implies $args<0> (or should it imply $args<n> with n being the highest scope number?)
+	
+	so maybe
+	
+	map = {
+		func = $0<0>
+		for i in $args.range { $args[i] = args[i] -> f }
+	}
+	
+	anArray<this> -> aFunction
+	
+	anArray<this> -> othArray<args> -> aFunction
+	
+	is the same as anArray.aFunction(othArray)
+	
+What about these?
+
+	scalar -> scalar  <-- result is an array? or is the result a scalar with two levels of scope?
+	
+	scalar -> array  <-- returns the array with one of its members (the first one?) having two levels of scope
+	
+	scalar -> function  <-- scalar is passed to function as its only argument
+	
+	array -> scalar  <-- an array with its first member backed up by the scalar?
+	
+	array -> array  <-- first array becomes "topmost" over any equivalent keys in second array
+	
+	array -> function  <-- array is passed in to function as its arguments
+	
+	function -> scalar  <-- scalar has two levels of scope, function is in front
+	
+	function -> array  <-- array's first member has function in front-most scope
+	
+	function -> function  <-- first function is passed to second as an argument
+	
+	(function)->function <-- this is a better way to write the first, because it is clear that we are not evaluating the first func
+	
+	array -> func -> func  <-- array is passed as args to first func, the result is passed to second func
+	
+	array -> (func) -> func  <-- array is composed with first func, result is passed as args to second func
+	
+	
+	
