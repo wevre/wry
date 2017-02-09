@@ -32,12 +32,12 @@ XmlComposer
 	beginElement   //(e, arb?, s?, c?)
 		e ?= $0
 		sDent = sGetIndent()
-		qeTags->Push(e)
+		qeTags->push(e)
 		sBuffer += sDent + sGetElement(e, ~arb, ~s, ~c)
 
 	// Closes an open tag. Balance each call to `endElement` with a preceding call to `beginElement`.
 	endElement
-		e = qeTags->pop
+		e = qeTags->pop()
 		guard e else return
 		sDent = sGetIndent()
 		sBuffer += sDent + "</\(e)>"
@@ -53,7 +53,7 @@ XmlComposer
 		e ?= $0
 		if c then arb.class = c
 		RegisterClass(arb.class)
-		sAttr = arb->filter()->map(sFromB)->sImplode(' ')
+		sAttr = arb->filter()->map(sFromB)->implode(' ')
 		sOut = '<' + e + sAttr->sPrefixIfCe(' ')
 		if fIsEmptyElem(e)
 			sOut += ' />'
@@ -156,6 +156,22 @@ ActionLink <- Link<super>   //(c?='alink')
 uSave = Url(ark=('ac', 'id'))
 lSave = ActionLink('Save', href=uSave->sGet(), arb=('title':'Save item'))
 
+//UPDATE: The way to do it would be more like this:
+
+ActionLink = Link -> (
+
+	<put stuff here to override Link>
+
+)
+
+// and maybe the parenthesis wouldn't be needed, but boy would that look strange, to have that arrow pointing off to nothing:
+
+ActionLink = Link ->
+	<override stuff here>
+
+// so then the alternate syntax (without the surrounding parenthesis) would be
+ActionLink <- Link
+	<put overriding stuff here>
 
 // A call like this thing->func(args) becomes thing$obj -> args$arg -> func
 // so inside func is available the scope of `thing` and `args`.
@@ -170,7 +186,7 @@ Url   //(sScheme?, sHost?, sPath?, arp?, ark?, sFrag?)
 		sPath ?= sGetUrlPath()
 		// merge the arp and ark arrays
 		arp->append(ark->filterRequest())
-		sp = arp->filter()->map(sFromP)->sImplode('&')->sPrefixIfCe('?')
+		sp = arp->filter()->map(sFromP)->implode('&')->sPrefixIfCe('?')
 		return sScheme->sSuffixIfCe('://') + sHost + spath + sp + sFrag->sPrefixIfCe('#')
 			
 
@@ -188,6 +204,49 @@ Url   //(sScheme?, sHost?, sPath?, arp?, ark?, sFrag?)
 // is under construction at the moment, evaluating both sides. Using equal sign means "add to whatever dictionary is under
 // construction at the moment, but only evaluate the right-hand side and take the left hand side as the key name (as a literal string.)
 // a tilde means ~XXX => XXX = XXX, so the left side is a literal, and the right side is evaluated.
+
+//THOUGHTS:
+
+Anything you compose on the left side of a function will get composed as $obj inside. If you compose multiple items, they will form a hierarchy:
+
+	arr1->arr2->myfunc()
+
+you can chain functions that return object, which will become the $obj to the next function:
+
+	arr1->filter()->map(myMap)->implode(',')
+	
+suppose you have a function that returns a function, say `adder` and you want to compose with that result:
+
+	myNums->(getAdder())()
+	-or-
+	adder = getAdder()
+	myNums->adder()
+	-or
+	adder = getAdder()
+	pre_compose = myNums->adder // this doesn't execute, but gets everything composed and ready to execute
+	pre_compose()
+	
+That last one is interesting. It would let you run the same function on an array of args, for example
+
+This is an explicit call:
+
+	myobj->myobj.method()
+	
+which makes sure that method has myobj in its $obj scope.
+
+But that is annoying, so we can just write
+
+	myobj.method()
+	
+and myobj will implicitly be in method's $obj scope.
+
+But it won't automatically be. if you copy it out:
+
+	meth_copy = myobj.method
+	
+	meth_copy() // this won't have anything in the $obj scope.
+	
+
 
 //THOUGHTS:
 //  flow control statements don't introduce new scope, so variables set in the 'then' or 'else' clause are available later

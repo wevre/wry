@@ -157,14 +157,14 @@ Do we allow assignment to be an operator that returns a value? That is how it wo
 		<do something with a>
 	}
 	
-Do we to allow any expression as condition-clauses? or only those that return boolean values? PHP has a broad set of things it will consider `false`, including empty strings, empty arrays, zero; whereas Lua only considers `false` and `nil` to be false and all those others are considered true. How do we handle a condion-clause that evaluates to an array? Do all the members of the array have to be true to continue?
+Do we to allow any expression as condition-clauses? or only those that return boolean values? PHP has a broad set of things it will consider `false`, including empty strings, empty arrays, zero; whereas Lua only considers `false` and `nil` to be false and all those others are considered true. How do we handle a condion-clause that evaluates to an array? Do all the members of the array have to be true to continue?  (In PHP it only depends on whether or not the array is empty.)
 
-Maybe we say: whatever expression is there in the condition clause will be cast (coerced) to a boolean, and there is a set of rules that control that. Maybe for an array, the first item of the array is used to determine the boolean.
+Maybe we say: whatever expression is there in the condition clause will be cast (coerced) to a boolean, and there is a set of rules that control that. Maybe for an array, the first item of the array is used to determine the boolean. In PHP an array is true if it isn't empty.
 
 Types
 -----------
 
-There are seven types: `Integer`, `Float`, `Bool`, `String`, `Null`, `Array`, and `Functions`. The `Array` type replaces what would be arrays, dictionaries, class instances, and parameter lists in other languages. It is an ordered map and behaves similarly to php's array type. The `Function` type is replacement for functions, methods, closures, and anonymous functions in other languages.
+There are six types: `Integer`, `Float`, `Bool`, `String`, `Null`, and `Array`. The `Array` type replaces what would be arrays, dictionaries, class instances, and parameter lists in other languages. It also serves as the type for functions and methods. It is an ordered map and behaves similarly to PHP's array type.
 
 The simple types (`Integer`, `Float`, `Bool`, `String`, `Null`) will be familiar to users of other languages, and can be created with literals that are obvious.
 
@@ -174,42 +174,78 @@ The simple types (`Integer`, `Float`, `Bool`, `String`, `Null`) will be familiar
 	employee = 'John Smith'
 	flag = null
 
-Those 5 simple types, together with the `Function` type, are scalars, whereas the `Array` type is a compound object.
+Those 5 simple types are scalars, whereas the `Array` type is a compound object.
+
+
 
 ### Arrays
 
-To create an array use parenthesis (or not, it is really the comma that denotes an array -- the parenthesis are needed mostly as delimiters because of operator precedence). An array can be a simple list of other types, with an automatic index that starts at 0. Or it can be more like a dictionary with keys and values, separate by colons and commas. Keys in this case would be `String` types. An array can also be a mix of the two. Key expressions that don't resolve to strings will emit a warning. _What about key expressions that resolve to Integer? Or will they be coerced to Strings?_ Entries with keys can be accessed by their key or by their position within the array. Positions are zero-based.
+To create an array use parenthesis (or not, it is really the comma that denotes an array -- the parenthesis are needed mostly as delimiters because of operator precedence).
+An array can be a simple list of other types (no keys), in which case incrementing integer keys will automatically be applied.
+Or it can be more like a dictionary with keys and values, separate by colons and commas.
+Keys are of type `String` or `Int`, or expressions that evaluate to one of these.
+Entries in the array can be retrieved by key.
 
-	employee = ( 'first' : 'mike', 'last' : 'weaver', 'empl-id' : 1234, 10.5 )
-	
-	employee[0] == employee['first'] == 'mike'
-	employee[3] == 10.5
-	
-This is similar to creating a dictionary in other languages, say JSON. Note that we use parenthesis (not square or curly brackets), key-value pairs are delimited by a colon, and items are separated by a comma.
+	employee = ('first': 'mike', 'last': 'weaver', 'empl-id': 1234, 10.5)
+		
+This is similar to creating a dictionary in other languages, say JSON.
+Note that we use parenthesis (not square or curly brackets), key-value pairs are delimited by a colon, and items are separated by a comma.
 
 An `Array` of items without keys is declared in a similar way:
 
-	cutoffs = ( 15.0 , 25.0 , 47.0 )
+	cutoffs = (15.0 ,25.0, 47.0)
 
-The items in the array are accessed with a subscript operator that uses square brackets. Inside the brackets use an integer index (or an expression that resolves to an `Integer` type) to access an item based on it's location. Use a string (or, again, an expression that resolves to a `String` type) to access an item by key. Expressions that resolve to other than `String` or `Integer` will emit a warning.
+The items in the array are accessed with a subscript operator that uses square brackets.
+Inside the brackets use an expression that evaluates to either an `Int` or `String` that represents the key.
 
-	cutoffs[0]
-	employee['first']
+	cutoffs[0] // 15.0
+	employee['first'] // 'mike'
+	key = 'first'
+	employee[key] // 'mike'
 
 An alternate way to retrieve keyed items in the array uses a dot syntax.
 
 	employee.first // equivalent to employee['first']
 
-Multiple items can be accessed using multiple items in the subscript, separated by commas. Integer indices will access entries based on position. String indices will access based on key lookup. Expressions that resolve to other than String or Integer will emit a warning.
+Multiple items can be accessed using multiple items in the subscript, separated by commas.
+Expressions that resolve to other than String or Integer will emit a warning.
 
 	cutoffs[0, 2] // the results here will not have keys associated with them, just the indices 0 and 1
 	employee['first', 'empl-id']
 
-The two expressions above, instead of returning a single item from the original array, will each return an array with two items. Integer indices in the returned array will be reset to 0, but string keys will be preserved from the original.
+The two expressions above, instead of returning a single item from the original array, will each return an array with two items.
+Integer indices in the returned array will be reset to 0, but string keys will be preserved from the original.
+(... or, why not preserve integer indices? we can always have a method to "reset" array indices if that is desirable.)
 
-TODO: need a syntax for ranges, maybe something like Swift's ... and ..< operators. <-- don't need syntax for that. It would be implemented by something that evaluates to an array of indices.
+Alternate array declaration syntax:
+
+Arrays keys can be declared in different ways. The following are equivalent:
+
+	mydata = ('name': 'mike', 'age': 15)
+	mydata = (name='mike', age=15)
+	name = 'mike'
+	age = 15
+	mydata = (~name, ~age)
+	mydata
+		name='mike'
+		age=15
+	mydata
+		'name': 'mike'
+		'age': 15
+	'mydata': ('name': 'mike', 'age': 15)
+
+So when declaring keys, one can use a string, or an expression that evaluates to a string, followed by a colon.
+Or one can use a bare name (no quotes) and an equals sign.
+One can use parenthesis for an in-line declaration.
+Or one can use multiple lines and indentation to layout the structure of the array.
+A tilde preceding a bare name converts it as follows: `~name` is expanded to `'name': name`.
 
 ### Functions
+
+NOTE[2017-02-09] I want to change this to make the curly braces optional.
+They will be more like parenthesis for arrays: need for inline declarations, but
+replaced with indentation for multi-line construction.
+(And let's face it, most functions are multi-line.)
 
 A function is declared with curly braces:
 
