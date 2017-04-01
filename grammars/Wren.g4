@@ -414,6 +414,9 @@ NEWLINE
 			// skip a blank line
 			if (next == 'r' || next == '\n') { skip(); return; } //TODO: should also skip if comment is next token on the line
 
+			//TODO: we could test here if next == '/' and _input.LA(2) == '*' which means we are starting a comment
+			//TODO: similarly, we could test if next is '/' and LA(2) is also '/' and skip.
+
 			emit(commonToken(NEWLINE, newline));
 
 			int indent = getIndentationCount(spaces);
