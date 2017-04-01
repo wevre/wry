@@ -8,11 +8,14 @@ tokens { INDENT, DEDENT }
 
 	private java.util.Stack<Integer> indentStack = new java.util.Stack<>();
 
+	private int getCurrentIndent() { return indentStack.isEmpty() ? 0 : indentStack.peek(); }
+
 	@Override
 	public Token nextToken() {
+		//TODO: if token is EOF and we still have an indentStack, we need to emit DEDENTs
 		if (!tokenQueue.isEmpty()) { return tokenQueue.poll(); }
 		Token next = super.nextToken();
-		if (null == next || next.getType() != NEWLINE) { return next; }
+		if (null == next || next.getType() != DentParser.NEWLINE) { return next; }
 		tokenQueue.offer(next);
 		int indent = 0;
 		do {
@@ -29,18 +32,13 @@ tokens { INDENT, DEDENT }
 			} else if (grab.getType() == DentParser.COMMENT) {
 				tokenQueue.offer(grab);
 			} else {
-				int prevIndent = indentStack.isEmpty() ? 0 : indentStack.peek();
-				if (indent == prevIndent) {
-					;
-				} else if (indent > prevIndent) {
-					indentStack.push(indent);
-					CommonToken token = new CommonToken(DentParser.INDENT, "INDENT");
-					//TODO: set the tokens start and end character indices...
-					tokenQueue.offer(token);
-				} else {
-					//TODO: how to handle a DEDENT to a previously unknown indentation level...
-					//TODO: we need to not just check for greater than, but eventually it should be equal to an original indent amount...
-					while (!indentStack.isEmpty() && indentStack.peek() > indent) {
+				while (indent != getCurrentIndent()) {
+					if (indent > getCurrentIndent()) {
+						indentStack.push(indent);
+						CommonToken token = new CommonToken(DentParser.INDENT, "INDENT");
+						//TODO: set the tokens start and end character indices...
+						tokenQueue.offer(token);
+					} else {
 						CommonToken token = new CommonToken(DentParser.DEDENT, "DEDENT");
 						tokenQueue.offer(token);
 						indentStack.pop();
