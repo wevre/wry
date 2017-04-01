@@ -11,45 +11,46 @@
 
 #include wCommon/wStandard
 
-EOL = "\n"
-kContent = 'content'
-kAttribs = 'attribs'
+constants
+	EOL = "\n"
+	kContent = 'content'
+	kAttribs = 'attribs'
 
 // 
 XmlComposer
-	fIndent =  true
+	fIndent = true
 	fDebug = true
 	sBuffer =  ''
 	qeTags =  ()
 
 	// Returns a string of tabs to indent the next element.
-	sGetIndent
+	sGetIndent = func
 		guard fIndent else return ''
-		(sBuffer ? EOL : '') + "\t"->repeat(qeTags->count)
+		(sBuffer ? constants.EOL : '') + "\t"->repeat(qeTags->count)
 	
 	// Begins an HTML element with an opening tag, pushing it onto the qeTags stack.
 	// Balance each call to `beginElement` with a subsequent call to `endElement`.
-	beginElement   //(e, arb?, s?, c?)
+	beginElement = func   //(e, arb?, s?, c?)
 		e ?= $0
 		sDent = sGetIndent()
 		qeTags->push(e)
 		sBuffer += sDent + sGetElement(e, ~arb, ~s, ~c)
 
 	// Closes an open tag. Balance each call to `endElement` with a preceding call to `beginElement`.
-	endElement
+	endElement = func
 		e = qeTags->pop()
 		guard e else return
 		sDent = sGetIndent()
 		sBuffer += sDent + "</\(e)>"
 
 	// Composes a complete element, with opening and closing tag and content.
-	addElement   //(e, arb?, s?, c?)
+	addElement = func   //(e, arb?, s?, c?)
 		e ?= $0
 		s = sGetIndent()
 		sBuffer += s + sGetElement(e, ~arb, ~s, ~c, fClose=true)
 
 	// Used by both `addElement` and `beginElement` to generate the string of the element.
-	sGetElement   //(e, arb?, s?, fClose?, c?)	
+	sGetElement = func   //(e, arb?, s?, fClose?, c?)	
 		e ?= $0
 		if c then arb.class = c
 		RegisterClass(arb.class)
@@ -61,7 +62,7 @@ XmlComposer
 			sOut += '>' + s + (fClose ? "</\(e)> : '')
 		return sOut
 
-	fIsEmptyElem   //(e)
+	fIsEmptyElem = func   //(e)
 		e ?= $0
 		are = ('area', 'base', 'br', 'col', 'command', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source')
 		return are->contains(e)
@@ -69,17 +70,17 @@ XmlComposer
 		sBuffer = ''
 
 	// Adds a custom string `s`, with no alterations, to the internal buffer.
-	addCustom   //(s)
+	addCustom = func   //(s)
 		s ?= $0
 		sBuffer += s
 
 	// Returns the internal buffer where HTML has been composed. Optionally clears the buffer if `fReset` is true.
-	sGet   //(fReset?=true)
+	sGet = func   //(fReset?=true)
 		fReset ?= true
 		defer if fReset then resetBuffer()
 		return sBuffer
 		
-	resetBuffer
+	resetBuffer = func
 		sBuffer = ''
 
 	//
@@ -88,27 +89,27 @@ XmlComposer
 
 	mcnClasses@0 = ()
 
-	registerClass   //(s)
+	registerClass = func   //(s)
 		s ?= $0
 		mcnClasses@0[s] += 1
 
-	arcGetClasses
+	arcGetClasses = func
 		return mcnClasses@0->keys
 
-	resetClasses
+	resetClasses = func
 		mcnClasses@0 = ()
 
 	//
 	// !Common constructions
 	//
 
-	sAreYouSure   //(s)
+	sAreYouSure = func   //(s)
 		s ?= $0
 		return "javascript:return confirm('\(sAddSlashes(s))?')"
 
 	cWarn = 'warn'
 
-	sWarn   //(s)
+	sWarn = func   //(s)
 		s ?= $0
 		return "<span class=\"\(cWarn)\">\(s)</span>"
 
@@ -117,7 +118,7 @@ XmlComposer
 	cPlname = 'plname'
 	cPlvalue = 'plvalue'
 
-	composePropertyList   // (arb)
+	composePropertyList = func   // (arb)
 		arb ?= $0
 		guard arb else return
 		beginElement('div', c=cPlist)
@@ -130,39 +131,46 @@ XmlComposer
 		endElement
 
 
-
-Link   //(s, href?, c?, arb?)
-	s ?= $0
-	arb.class ?= c
-	arb.href ?= href
+// This doesn't really work. We're not letting you initialize an array with a function call.
+// But you can create an init function that you can call...
+Link
 	
+	// or this could be create and we could call Link.create to return an object that is initialized with whatever a Link needs to be or have.
+	init = func   //(s, href?, c?, arb?)
+		$obj.s ?= $0 ?= 0
+		$obj.class ?= c
+		$obj.href ?= href
+		
+	create = func
+		with $arg
+			s ?= $0
+			class ?= ''
+			href ?= ''
+		return $arg
+
 	// Returns the string representation of the link. Creates a composer if one is not provided.
-	sGet   //(cp?)
+	toString   //(cp?)
 		cp ?= XmlComposer()
-		e = ( arb.href ? 'a' : 'span' )
+		e = ( href ? 'a' : 'span' )
 		return cp->getElement(e, ~arb, ~s, fClose=true)
 	
-
+my_link = Link->create('tickets page', c='alink', href='/tickets')
+my_link->toString()->print()
 
 // How do we make a special subclass, ActionLink, that defaults the class to 'alink'?
 // let -> be "compose with" and <- "compose into" or "compose from" (or, "inherit from")
-ActionLink <- Link<super>   //(c?='alink')
-	arb.class = 'alink'
+ActionLink <- Link#
 	
 	// we would use something like this if we wanted to call super.
-	init
-		init@super()
+	init = func
+		init@Link(~~$arg)
+		$obj.class ?= 'alink'
 	
-uSave = Url(ark=('ac', 'id'))
-lSave = ActionLink('Save', href=uSave->sGet(), arb=('title':'Save item'))
+uSave = Url
+uSave->init(ark=('ac', 'id'))
+lSave = ActionLink
+lSave->init('Save', href=uSave->sGet(), arb=('title':'Save item'))
 
-//UPDATE: The way to do it would be more like this:
-
-ActionLink = Link -> (
-
-	<put stuff here to override Link>
-
-)
 
 // and maybe the parenthesis wouldn't be needed, but boy would that look strange, to have that arrow pointing off to nothing:
 
@@ -179,6 +187,7 @@ ActionLink <- Link
 // a = ( href="/images/banner", class="fl-left" )
 // a->composeLink()
 // composeLink(a.~href, a.~class)
+// composeLink(~~a)
 
 Url   //(sScheme?, sHost?, sPath?, arp?, ark?, sFrag?)
 
