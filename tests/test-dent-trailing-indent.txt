@@ -1,0 +1,8 @@
+a = 5
+ //  b = 3
+   b = 5
+  /* a
+multi-
+line
+comment
+that ends the file */

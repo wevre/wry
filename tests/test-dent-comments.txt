@@ -1,0 +1,10 @@
+a = 5
+ //  b = 3
+   b = 5
+  /* a
+multi-
+line
+comment
+that preserves
+indentation */ c = 5
+d = 5
