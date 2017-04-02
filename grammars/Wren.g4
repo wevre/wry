@@ -64,99 +64,66 @@ tokens { INDENT, DEDENT }
 
 @lexer::members {
 
-	// A queue onto which we push extra tokens. The implementation of `nextToken` is overridden to empty the `tokens` queue first.
-	private java.util.LinkedList<Token> tokens = new java.util.LinkedList<>();
+	private boolean pendingDent = true;   // Starting out `true` means we'll capture any whitespace at the beginning of the script.
 
-	// The stack that keeps track of the indentation level.
-	private java.util.Stack<Integer> indents = new java.util.Stack<>();
+	private int indentCount = 0;
 
-	// The most recently produced token. We set it inside `nextToken`.
-	private Token lastToken = null;
+	private java.util.LinkedList<Token> tokenQueue = new java.util.LinkedList<>();
 
-	// I think this method intercepts the normal emit and stashes the token in our `tokens` queue.
-	@Override
-	public void emit(Token t) {   //TODO: how does `emit` relate to `nextToken`?
-		System.out.println("emit called with token `" + t + "`");
-		super.setToken(t);   //TODO: what does this do?, and if we haven't overridden, do we need `super`?
-		tokens.offer(t);
-		System.out.println("the tokens queue now has " + tokens.size() + " members.");
+	private java.util.Stack<Integer> indentStack = new java.util.Stack<>();
+
+	private Token initialIndentToken = null;
+
+	private int getSavedIndent() { return indentStack.isEmpty() ? 0 : indentStack.peek(); }
+
+	private CommonToken createToken(int type, String text, Token next) {
+		CommonToken token = new CommonToken(type, text);
+		if (null != initialIndentToken) {
+			token.setStartIndex(initialIndentToken.getStartIndex());
+			token.setLine(initialIndentToken.getLine());
+			token.setCharPositionInLine(initialIndentToken.getCharPositionInLine());
+			token.setStopIndex(next.getStartIndex()-1);
+		}
+		return token;
 	}
 
-	// When we reach EOF, spit out any pending DEDENTs.
-	private void clearOutDedents() {
-		// Remove any trailing EOF tokens from our buffer.
-		for (int i = tokens.size() - 1; i >= 0; i--) {
-			if (tokens.get(i).getType() == EOF) { tokens.remove(i); }
-		}
-
-		// First emit an extra line break that serves as the end of the statement.   //TODO: is this needed? Need to think of an example...
-		emit(commonToken(WrenParser.NEWLINE, "\n"));
-
-		// Now emit as many DEDENT tokens as needed.
-		while (!indents.isEmpty()) {
-			emit(createDedent());
-			indents.pop();
-		}
-
-		// Put the EOF back on the token stream.
-		emit(commonToken(WrenParser.EOF, "<EOF>"));
-	}
-
-	// My understanding of Lexer.nextToken() is it
 	@Override
 	public Token nextToken() {
 
-		// Check if the end-of-file is ahead and there are still some DEDENTS expected.
-		if (_input.LA(1) == EOF && !indents.isEmpty()) {
-			clearOutDedents();
+		// Return tokens from the queue if it is not empty.
+		if (!tokenQueue.isEmpty()) { return tokenQueue.poll(); }
+
+		// Grab the next token and if nothing special is needed, simply return it.
+		Token next = super.nextToken();
+		//NOTE: This would be the appropriate spot to count whitespace or deal with NEWLINES, but it is already handled with custom actions down in the lexer rules.
+		if (pendingDent && null == initialIndentToken && NEWLINE != next.getType()) { initialIndentToken = next; }
+		if (null == next || HIDDEN == next.getChannel() || NEWLINE == next.getType()) { return next; }
+
+		// Handle EOF; in particular, handle an abrupt EOF that comes without an immediately preceding NEWLINE.
+		if (next.getType() == EOF) {
+			indentCount = 0;
+			// EOF outside of `pendingDent` state means we did not have a final NEWLINE before the end of file.
+			if (!pendingDent) {
+				initialIndentToken = next;
+				tokenQueue.offer(createToken(NEWLINE, "NEWLINE", next));
+			}
 		}
 
-		System.out.println("calling super.nextToken");
-		Token next = super.nextToken();   //TODO: how is it that this value is not lost when we pull from the `tokens` queue instead?
-		System.out.println("result of super.nextToken is `" + next + "`");
-
-		if (next.getChannel() == Token.DEFAULT_CHANNEL) {
-			// Keep track of the last token on the default channel.
-			lastToken = next;
+		// Before exiting `pendingDent` state we need to queue up proper INDENTS and DEDENTS.
+		while (indentCount != getSavedIndent()) {
+			if (indentCount > getSavedIndent()) {
+				indentStack.push(indentCount);
+				tokenQueue.offer(createToken(WrenParser.INDENT, "INDENT" + indentCount, next));
+			} else {
+				indentStack.pop();
+				tokenQueue.offer(createToken(WrenParser.DEDENT, "DEDENT"+getSavedIndent(), next));
+			}
 		}
-
-		if (tokens.isEmpty()) {
-			System.out.println("nextToken: returning `next`");
-			return next;
-		} else {
-			System.out.println("nextToken: returning `tokens.poll()`");
-			return tokens.poll();
-		}
-		//return tokens.isEmpty() ? next : tokens.poll();
+		pendingDent = false;
+		tokenQueue.offer(next);
+		return tokenQueue.poll();
 	}
 
-	// Creates a DEDENT token and sets the line number using the last token
-	private Token createDedent() {
-		CommonToken dedent = commonToken(WrenParser.DEDENT, "");
-		dedent.setLine(lastToken.getLine());
-		return dedent;
-	}
-
-	private CommonToken commonToken(int type, String text) {
-		return new CommonToken(type, text);
-	}
-
-	// Not sure how to describe what this does, think it just wraps some repetitive logic into a single function call.
-	// Actually it sets the stop and start character indices.
-	private CommonToken old_commonToken(int type, String text) {
-		int stop = getCharIndex() - 1;
-		int start = text.isEmpty() ? stop : stop - text.length() + 1;
-		return new CommonToken(_tokenFactorySourcePair, type, DEFAULT_TOKEN_CHANNEL, start, stop);
-	}
-
-	// Counts the characters in the string, which should only be either spaces or tabs.
-	static int getIndentationCount(String spaces) {
-		return spaces.length();
-	}
-
-	boolean atStartOfInput() {
-		return getCharPositionInLine() == 0 && getLine() == 1;
-	}
 }
 
 script
@@ -401,45 +368,9 @@ StringEscapeChar
 *	comments and whitespace
 */
 
-Block_comment : '/*' ( Block_comment | . )*? '*/' -> channel(HIDDEN) ;   // allow nesting comments
-Line_comment : '//' ~[\r\n] -> channel(HIDDEN) ;
+BlockComment : '/*' ( BlockComment | . )*? '*/' -> channel(HIDDEN) ;   // allow nesting comments
+LineComment : '//' ~[\r\n]* -> channel(HIDDEN) ;
 
-NEWLINE
-	:	( {atStartOfInput()}? SPACES | EOL SPACES? )
-		{
-			String newline = getText().replaceAll("[^\r\n]+", "");
-			String spaces = getText().replaceAll("[\r\n]+", "");
-			int next = _input.LA(1);
+NEWLINE : ( '\r'? '\n' | '\r' ) { if (pendingDent) { setChannel(HIDDEN); } pendingDent = true; indentCount = 0; initialIndentToken = null; } ;
 
-			// skip a blank line
-			if (next == 'r' || next == '\n') { skip(); return; } //TODO: should also skip if comment is next token on the line
-
-			//TODO: we could test here if next == '/' and _input.LA(2) == '*' which means we are starting a comment
-			//TODO: similarly, we could test if next is '/' and LA(2) is also '/' and skip.
-
-			emit(commonToken(NEWLINE, newline));
-
-			int indent = getIndentationCount(spaces);
-			int previous = indents.isEmpty() ? 0 : indents.peek();
-
-			if (indent == previous) {
-				skip();
-			} else if (indent > previous) {
-				indents.push(indent);
-				emit(commonToken(WrenParser.INDENT, spaces));
-			} else {
-				while (!indents.isEmpty() && indents.peek() > indent) {
-					emit(createDedent());
-					indents.pop();
-				}
-			}
-		}
-	;
-
-fragment
-EOL : '\r'? '\n' | '\r' ;
-fragment
-SPACES : [ \t]+ ;
-
-//WS : [ \t\r\n]+ -> channel(HIDDEN) ;   //TODO: Swift includes \u000B, \u000C, and \u0000
-WS : [ \t]+ -> channel(HIDDEN) ;   //TODO: Swift includes \u000B, \u000C, and \u0000
+WS : [ \t]+ { setChannel(HIDDEN); if (pendingDent) { indentCount += getText().length(); } } ;   //TODO: Swift includes \u000B, \u000C, and \u0000

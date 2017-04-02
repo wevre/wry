@@ -74,10 +74,10 @@ tokens { INDENT, DEDENT }
 		if (pendingDent && null == initialIndentToken && NEWLINE != next.getType()) { initialIndentToken = next; }
 		if (null == next || HIDDEN == next.getChannel() || NEWLINE == next.getType()) { return next; }
 
-		// Handle EOF; in particular, handle an abrupt EOF that comes without an immediately preceding NL.
+		// Handle EOF; in particular, handle an abrupt EOF that comes without an immediately preceding NEWLINE.
 		if (next.getType() == EOF) {
 			indentCount = 0;
-			// EOF outside of `pendingDent` mode means we did not have a final NEWLINE before the end of file.
+			// EOF outside of `pendingDent` state means we did not have a final NEWLINE before the end of file.
 			if (!pendingDent) {
 				initialIndentToken = next;
 				tokenQueue.offer(createToken(NEWLINE, "NEWLINE", next));
