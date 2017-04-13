@@ -8,18 +8,18 @@ Grammar
 
 Some of this might contradict what is written below. This is an evolving document. Go with it.
 
-###Lexical Structure
+### Lexical Structure
 
-####Name
+#### Name
 
-####Operator
+#### Operator
 
 	operator :: <some stuff>
 	assignment-operator :: `=`
 	conditional-operator :: `?` expression `:`
 	compose-operator :: `->`
 
-####Literals
+#### Literals
 
 	literal :: numeric-literal | string-literal | boolean-literal | null-literal
 
@@ -33,7 +33,7 @@ Some of this might contradict what is written below. This is an evolving documen
 
 	string-literal :: <some stuff>
 
-####Arrays and Functions
+#### Arrays and Functions
 
 I had these up under literals before. If they are not there, they need to be included in somewhere so they count as an expression.
 
@@ -55,12 +55,12 @@ I had these up under literals before. If they are not there, they need to be inc
 	function-literal :: code-block
 	code-block :: `{` statement-list `}` // statement list will be defined below
 
-###Expressions
+### Expressions
 
 	expression :: prefix-expression | prefix-expression binary-expressions
 	expression :: `(` expression `)` // Is this recursion okay?? Let's find an example of a calculator that uses grouping parenthesis
 
-####Primary expression
+#### Primary expression
 
 	primary-expression :: name
 	primary-expression :: literal-expression
@@ -72,7 +72,7 @@ I had these up under literals before. If they are not there, they need to be inc
 	scope-expression :: name `:` expression `:`
 	scope-name :: name // redundant for now, but maybe we want to add decimal-digits ??
 
-####Postfix expression
+#### Postfix expression
 
 A postfix expression is formed by applying a postfix operator or other postfix syntax to an expression.
 
@@ -92,14 +92,14 @@ A postfix expression is formed by applying a postfix operator or other postfix s
 	subscript-expression :: postfix-expression `[` subscript-expression-list `]`
 	subscript-expression-list :: expression | expression `,` subscript-expression-list
 
-####Binary Expression
+#### Binary Expression
 
 	binary-expression :: binary-operator prefix-expression
 	binary-expressions :: binary-expression | binary-expression binary-expressions
 
 	prefix-expression :: postfix-expression | prefix-operator postfix-expression
 
-###Statements
+### Statements
 
 For now, assignment is sort of an operator that works, but allows a bunch of stuff through that we'll have to check for and emit errors (such as assigning to a string literal, for example). It might be better to make assignment a statement where we have some better control over what goes on the left-hand side (names, together with memberwise, scope, subscript access; and also lists of names).
 
@@ -117,7 +117,7 @@ and also needs to be possible when we set properties on an object.
 	statement-list :: statement statement-list
 	statement :: statement `;`
 
-####Loop Statement
+#### Loop Statement
 
 	loop-statements :: for-in-statement | while-statement | repeat-statement
 
@@ -129,13 +129,13 @@ and also needs to be possible when we set properties on an object.
 
 	repeat-statement :: `repeat` code-block `while` expression
 
-####Branch Statement
+#### Branch Statement
 
-####Labeled Statement
+#### Labeled Statement
 
-####Control Transfer Statement
+#### Control Transfer Statement
 
-####Defer Statement
+#### Defer Statement
 
 Questions
 -----------
