@@ -150,22 +150,16 @@ inlineStatementList
 
 smallStatement
 	:	flowStatement
-	|	topExpr
-	|	assignStatement
-	;
-
-assignStatement
-	:	nameRef '=' topExpr
-	//	we need the expr ':' expr alternate here, but that leftside expression can be a limited set (not, for example expr'='expr)
+	|	exprList
 	;
 
 flowStatement
 	:	'break' inlineStatementList? Label?
 	|	'continue' inlineStatementList? Label?
-	|	'return' topExpr
-	|	'throw' topExpr
-//	|	'assert' topExpr
-//	|	'yield' topExpr
+	|	'return' exprList
+	|	'throw' exprList
+//	|	'assert' exprList
+//	|	'yield' exprList
 	;
 
 /*
@@ -182,21 +176,21 @@ compoundStatement
 	;
 
 ifStatement
-	:	'if' topExpr doableBlock ( 'else' 'if' topExpr doableBlock )* ( 'else' doableBlock )?
+	:	'if' exprList doableBlock ( 'else' 'if' exprList doableBlock )* ( 'else' doableBlock )?
 	;
 
 doStatement
 	:	'do' ( Label )? block ( 'then' block )?
-	|	'do' 'if' topExpr ( Label )? block ( 'then' block )?
+	|	'do' 'if' exprList ( Label )? block ( 'then' block )?
 	;
 
 forStatement
-	:	'for' topExpr ( Label )? block ( 'then' block )?
-	|	'for' topExpr 'if' topExpr ( Label )? block ( 'then' block )?
+	:	'for' exprList ( Label )? block ( 'then' block )?
+	|	'for' exprList 'if' exprList ( Label )? block ( 'then' block )?
 	;
 
 tryStatement
-	:	'try' doableBlock ( 'catch' 'if' topExpr doableBlock )* ( 'catch' doableBlock )?
+	:	'try' doableBlock ( 'catch' 'if' exprList doableBlock )* ( 'catch' doableBlock )?
 	;
 
 withStatement
@@ -205,7 +199,7 @@ withStatement
 
 assignBlock
 	:	nameRef blockStatements
-	|	topExpr ':' blockStatements
+	|	exprList ':' blockStatements
 	;
 
 block
@@ -223,13 +217,13 @@ doableBlock
 	|	forStatement
 	;
 
-topExpr
+exprList
 	:	expr ( ',' expr)* ','?
-	|	'(' topExpr ')'
 	;
 
 expr
-	:	expr '->' expr											#composeExpr
+	:	'(' exprList ')'											#groupExpr
+	|	expr '->' expr											#composeExpr
 	|	expr '(' expr? ')'										#executeExpr
 	|	expr '<' expr '>'										#argExpr
 	|	sign=( PLUS | MINUS ) expr						#unarySignExpr
@@ -239,9 +233,8 @@ expr
 	|	expr op=( LTEQ | GTEQ | LT | GT ) expr	#relationExpr
 	|	expr AND expr											#andExpr
 	|	expr OR expr											#orExpr
-	|	nameRef '=' expr										#nameAssignExpr
-	|	expr ':' expr												#assignExpr
-	|	'(' expr ')'													#groupExpr
+	|	nameRef '=' expr										#assignExpr
+	|<assoc=right>  expr ':' expr						#assocExpr
 	|	atom														#atomExpr
 	;
 
@@ -281,6 +274,12 @@ DubTildeName : '~~' Name ;
 *	names
 */
 
+nameExpression
+	:	nameRef
+	|	'&' nameRef
+	|	'&&' nameRef
+	;
+
 nameRef
 	:	Name trailer*
 	;
@@ -290,19 +289,12 @@ trailer
 	|	'.' PlainName
 	;
 
-PlainName : NameHead NameChar*	;
-
-nameExpression
-	:	nameRef
-	|	'&' nameRef
-	|	'&&' nameRef
-	;
-
 Name
 	:	PlainName
 	|	SpecialName
 	;
 
+PlainName : NameHead NameChar*	;
 fragment NameHead : [_a-zA-Z] ;
 fragment NameChar : [0-9] | NameHead ;
 
