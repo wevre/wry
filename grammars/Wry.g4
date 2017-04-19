@@ -1,79 +1,81 @@
 /*
-*	wren.g4
-*
-*	An ANTLR4 grammar for wren.
-*
-*	Author: Mike Weaver
-*	Created: 2017-03-15
-*
+	*	Wry.g4
+	*
+	*	ANTLR4 grammar for wry.
+	*
+	*	Author: Mike Weaver
+	*	Created: 2017-03-15
+	*
 */
 
-
-//	Here is what we don't handle yet:
-//		compose function might need its own rule, or anyway we want to be able to have this construct:
-//			expr '->' block
-//		and this one
-//			name = expr '->' block
-//		which I was thinking could be "sugared" to look like this:
-//			name '<-' reference block
-//		maybe a block of statements/expressions can be allowed in the middle of an expression sequence
-//		to build an "array on the fly". <-- I think that will make for some very messy code. Instead, let's isolate where
-//		we want to allow this and create explicit rules for it.
 
 //	Another thought I had: we can compose an object with a function, without calling the function, and save that.
 //	Doing so creates a sort of "bundle" with the function and a built-in $obj. But what about allowing the same thing
 //	with a pre-composed, or bundled, $arg? So maybe we allow this:
-//		saved = my_obj -> my_func ~ my_arg
+//		saved = my_obj -> my_func < my_arg >
 //	Then that can be saved and called later. It can also be composed later, so we might see something like this:
 //		oth_obj -> saved( oth_args... )
-//	And in this case, the $obj will be equivalent to `oth_obj -> my_obj` and the $arg will be equivalent to `my_arg -> oth_arg`.
+//	And in this case, the $obj will be equivalent to `oth_obj -> my_obj` and the $arg will be equivalent to oth_args replayed
+//	on top of (i.e. overwriting) my_arg.
 //	The thing to note here is that the object provided at the call will be composed "behind" the original (searched last),
-//	but the args will be composed "in front" of the original (searched first).
-//	Whether we allow it or not, then, conceptually we have this:
-//		obj1 -> obj2 -> myfunc ~ arg1 ~ arg2
-//	with scope searches resolved from the inside out.
+//	but the args will be combined with original, replacing any that have the same key. Another way to think about this is $args will not be
+//	composed into a hierarchy. There is only 1 $args and if it composed multiple times, it will be the result of overwriting each time. And during function execution, the $arg scope will be marked as "read-only" so attempts to modify it will blow up.
 
 
 //	Another thing I want to provide for is composing and defining at the same time. This allows for a form of inheritance.
 //	So instead of this:
-//		base_obj = ...
-//		a = base_obj -> ()   // or however we designate an empty array? maybe with a comma?
+//		copy = base_obj
+//		a = copy -> []   // or however we designate an empty array? maybe with a comma?
+//		with a
+//			...
+//		// update: based on my answer below dated 2017-04-18, we could write the example like this:
+//		a = ~~base_obj -> []
 //		with a
 //			...
 //	All of the above can be accomplished with:
 //		a <- base_obj
 //			...
+//	Something to note: normally composing would create a reference to the original objects, but in this case we probably don't want a reference,
+//	we want a copy. So what mechanism do we have to allow the alternative? In other words, how do we get a copy of `base_obj`, if that is what we want, in the following:
+//		a = base_obj -> []
+//	instead of a reference, which would be the normal result?
+//	[2017-04-18] I know the answer: we use expansion:
+//		a = ~~base_obj -> []
+//	That will make a composition of a _copy_ of `base_obj`above an empty object and the result will be stored in `a`.
 
-//	Another clarifying thought: when we badge an object participating in a composition, we need different operators for (a) declaring the
-//	badge, and (b) accessing the badge. Perhaps something like this:
+//	So maybe the one remaining question is how do we assign a reference of an object? or store a reference to an object:
+//		a = ( parent=<ref to some object>, name="fred" )
+//	The C-like syntax (also PHP) would be to use `&` as a prefix in front of the object name.
+
+//	[Updated on 2017-04-17] When composing, we can assign a "badge" to an object so that we can do name lookup directly on that object,
+//	rather than up the normal hierarchy chain.
+//	Use the pound sign (octothorp) to badge an object during composition:
 //		base_obj#base -> oth_obj#child -> some_func()
-//	And then inside the func we can access a member of base_obj or oth_obj with:
-//		parent_func@base()
-//	At first I thought I could use `#` for both, but confusion would arise if, during composition, you are intending to declare a badge,
-//	or maybe you are trying to access an already declared badge instead. For that reason, the operators need to be different.
+//	Later use the ampersand to access the badged object directly (for example inside a function with an $obj in scope):
+//		@base.parent_func()
+//	Or, if we are saving the composition:
+//		comp = base_obj#base -> oth_obj#child
+//		comp@base.some_func()   //(1)
+//		comp.some_func()   //(2)
+//	Version 1 will grab the function `some_func` defined on the original base_obj array, ignoring it if it exists on `oth_obj`; whereas version 2
+//	will undergo a normal name resolution search starting with `oth_obj`.
 
 //	Also need to sort out how strong and weak references will work. They only make sense in assignments
 //	(so a new name is pointing at a reference to an existing name) or maybe return statements from functions.
 //	This includes assignments that are happening inside an array construction. Let's go see how PHP handles this.
 
-//	Also I was thinking I would allow alternate operators for things like × and ÷ and ≤ and ≥ and ∧ and ∨ and ∩ and ∪
 
-grammar Wren;
+grammar Wry;
 
 tokens { INDENT, DEDENT }
 
 @lexer::members {
 
 	private boolean pendingDent = true;   // Starting out `true` means we'll capture any whitespace at the beginning of the script.
-
 	private int indentCount = 0;
-
 	private java.util.LinkedList<Token> tokenQueue = new java.util.LinkedList<>();
-
 	private java.util.Stack<Integer> indentStack = new java.util.Stack<>();
-
 	private Token initialIndentToken = null;
-
 	private int getSavedIndent() { return indentStack.isEmpty() ? 0 : indentStack.peek(); }
 
 	private CommonToken createToken(int type, String text, Token next) {
@@ -113,10 +115,10 @@ tokens { INDENT, DEDENT }
 		while (indentCount != getSavedIndent()) {
 			if (indentCount > getSavedIndent()) {
 				indentStack.push(indentCount);
-				tokenQueue.offer(createToken(WrenParser.INDENT, "INDENT" + indentCount, next));
+				tokenQueue.offer(createToken(WryParser.INDENT, "INDENT" + indentCount, next));
 			} else {
 				indentStack.pop();
-				tokenQueue.offer(createToken(WrenParser.DEDENT, "DEDENT"+getSavedIndent(), next));
+				tokenQueue.offer(createToken(WryParser.DEDENT, "DEDENT"+getSavedIndent(), next));
 			}
 		}
 		pendingDent = false;
@@ -147,22 +149,23 @@ inlineStatementList
 */
 
 smallStatement
-	:	assignStatement
-	|	flowStatement
-	|	expr
+	:	flowStatement
+	|	topExpr
+	|	assignStatement
 	;
 
 assignStatement
-	:	nameRef EQOP expr   //TODO: we want to be able to put an array on the left side, or a nameReference with . and []
+	:	nameRef '=' topExpr
+	//	we need the expr ':' expr alternate here, but that leftside expression can be a limited set (not, for example expr'='expr)
 	;
 
 flowStatement
 	:	'break' inlineStatementList? Label?
 	|	'continue' inlineStatementList? Label?
-	|	'return' expr
-	|	'throw' expr
-//	|	'assert' expr
-//	|	'yield' expr
+	|	'return' topExpr
+	|	'throw' topExpr
+//	|	'assert' topExpr
+//	|	'yield' topExpr
 	;
 
 /*
@@ -179,21 +182,21 @@ compoundStatement
 	;
 
 ifStatement
-	:	'if' expr doableBlock ( 'else' 'if' expr doableBlock )* ( 'else' doableBlock )?
+	:	'if' topExpr doableBlock ( 'else' 'if' topExpr doableBlock )* ( 'else' doableBlock )?
 	;
 
 doStatement
 	:	'do' ( Label )? block ( 'then' block )?
-	|	'do' 'if' expr ( Label )? block ( 'then' block )?
+	|	'do' 'if' topExpr ( Label )? block ( 'then' block )?
 	;
 
 forStatement
-	:	'for' expr ( Label )? block ( 'then' block )?
-	|	'for' expr 'if' expr ( Label )? block ( 'then' block )?
+	:	'for' topExpr ( Label )? block ( 'then' block )?
+	|	'for' topExpr 'if' topExpr ( Label )? block ( 'then' block )?
 	;
 
 tryStatement
-	:	'try' doableBlock ( 'catch' 'if' expr doableBlock )*	( 'catch' doableBlock )?
+	:	'try' doableBlock ( 'catch' 'if' topExpr doableBlock )* ( 'catch' doableBlock )?
 	;
 
 withStatement
@@ -202,7 +205,7 @@ withStatement
 
 assignBlock
 	:	nameRef blockStatements
-	|	expr ':' blockStatements
+	|	topExpr ':' blockStatements
 	;
 
 block
@@ -220,23 +223,40 @@ doableBlock
 	|	forStatement
 	;
 
-expr
-	:	nameExpression
-	|	literal
-	|	functionExpression
-	|	expr ( ',' expr )+ ','?
-	|	'(' expr ')'
-	|	expr OP expr
-	|	expr '(' expr ')'
-	|	expr '->' expr
-	|	PlainName '=' expr
-	|	expr ':' expr
-	|	TildeName
-	|	DubTildeName
-//	|	logicalExpression
+topExpr
+	:	expr ( ',' expr)* ','?
+	|	'(' topExpr ')'
 	;
-TildeName : '~' Name ;
-DubTildeName : '~~' Name ;
+
+expr
+	:	expr '->' expr											#composeExpr
+	|	expr '(' expr? ')'										#executeExpr
+	|	expr '<' expr '>'										#argExpr
+	|	sign=( PLUS | MINUS ) expr						#unarySignExpr
+	|	NOT expr													#notExpr
+	|	expr op=( MULT | DIV | MOD ) expr			#multExpr
+	|	expr op=( PLUS | MINUS ) expr				#addExpr
+	|	expr op=( LTEQ | GTEQ | LT | GT ) expr	#relationExpr
+	|	expr AND expr											#andExpr
+	|	expr OR expr											#orExpr
+	|	nameRef '=' expr										#nameAssignExpr
+	|	expr ':' expr												#assignExpr
+	|	'(' expr ')'													#groupExpr
+	|	atom														#atomExpr
+	;
+
+NOT : '!' ;
+MULT : '*' | '×' ;
+DIV : '/' | '÷' ;
+MOD : '%' ;
+PLUS : '+' ;
+MINUS : '-' ;
+LTEQ : '<=' | '≤' ;
+GTEQ : '≥' | '>=' ;
+LT : '<' ;
+GT : '>' ;
+AND : '&&' | '∧' ;
+OR : '||' | '∨' ;
 
 functionExpression
 	:	'{' inlineStatementList '}'
@@ -246,6 +266,16 @@ functionExpression
 // 	:	inlineStatementList
 // 	|	blockStatements
 // 	;
+
+atom
+	:	nameExpression
+	|	functionExpression
+	|	literal
+	|	TildeName
+	|	DubTildeName
+	;
+TildeName : '~' Name ;
+DubTildeName : '~~' Name ;
 
 /*
 *	names
@@ -260,6 +290,8 @@ trailer
 	|	'.' PlainName
 	;
 
+PlainName : NameHead NameChar*	;
+
 nameExpression
 	:	nameRef
 	|	'&' nameRef
@@ -271,7 +303,6 @@ Name
 	|	SpecialName
 	;
 
-PlainName : NameHead NameChar*	;
 fragment NameHead : [_a-zA-Z] ;
 fragment NameChar : [0-9] | NameHead ;
 
@@ -307,8 +338,6 @@ numericLiteral
 	|	FloatingPointLiteral
 	;
 
-fragment SIGN : [+\-] ;
-
 /*
 *	integer literal
 */
@@ -321,19 +350,19 @@ integerLiteral
 	|	HexadecimalLiteral
 	;
 
-BinaryLiteral : SIGN? '0b' BinDigit ( BinDigit | '_' )*	;
+BinaryLiteral : '0b' BinDigit ( BinDigit | '_' )*	;
 fragment BinDigit : [01] ;
 
-OctalLiteral : SIGN? '0o' OctDigit ( OctDigit | '_' )*	;
+OctalLiteral : '0o' OctDigit ( OctDigit | '_' )*	;
 fragment OctDigit : [0-7] ;
 
-DecimalLiteral : SIGN? DecDigit ( DecDigit | '_' )*	;
+DecimalLiteral : DecDigit ( DecDigit | '_' )*	;
 fragment DecDigit : [0-9] ;
 
-DozenalLiteral : SIGN? '0d' DozDigit ( DozDigit | '_' )*	;
+DozenalLiteral : '0d' DozDigit ( DozDigit | '_' )*	;
 fragment DozDigit : [0-9xeXE] ;
 
-HexadecimalLiteral : SIGN? '0x' HexDigit HexChars? ;
+HexadecimalLiteral : '0x' HexDigit HexChars? ;
 fragment HexDigit : [0-9a-fA-F] ;
 fragment HexChars : ( HexDigit | '_' )+ ;
 
@@ -342,11 +371,11 @@ fragment HexChars : ( HexDigit | '_' )+ ;
 */
 
 FloatingPointLiteral
-	:	SIGN? DecimalLiteral ( '.' DecimalLiteral )? DecimalExponent?
-	|	SIGN? HexadecimalLiteral ( '.' HexDigit HexChars? )? HexadecimalExponent?
+	:	DecimalLiteral ( '.' DecimalLiteral )? DecimalExponent?
+	|	HexadecimalLiteral ( '.' HexDigit HexChars? )? HexadecimalExponent?
 	;
-fragment DecimalExponent : [eE] SIGN? DecimalLiteral ;
-fragment HexadecimalExponent : [pP] SIGN? DecimalLiteral ;
+fragment DecimalExponent : [eE] (PLUS|MINUS)? DecimalLiteral ;
+fragment HexadecimalExponent : [pP] (PLUS|MINUS)? DecimalLiteral ;
 
 /*
 *	string literal
