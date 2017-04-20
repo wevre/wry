@@ -8,61 +8,53 @@
 *
 */
 
+//	Stuff still floating around as ideas but not working in the grammar yet.
 
-//   Another thought I had: we can compose an object with a function, without calling the function, and save that.
-//   Doing so creates a sort of "bundle" with the function and a built-in $obj. But what about allowing the same thing
-//   with a pre-composed, or bundled, $arg? So maybe we allow this:
-//        saved = my_obj -> my_func < my_arg >
-//   Then that can be saved and called later. It can also be composed later, so we might see something like this:
-//        oth_obj -> saved( oth_args... )
-//   And in this case, the $obj will be equivalent to `oth_obj -> my_obj` and the $arg will be equivalent to oth_args replayed
-//   on top of (i.e. overwriting) my_arg.
-//   The thing to note here is that the object provided at the call will be composed "behind" the original (searched last),
-//   but the args will be combined with original, replacing any that have the same key. Another way to think about this is $args will not be
-//   composed into a hierarchy. There is only 1 $args and if it composed multiple times, it will be the result of overwriting each time. And during function execution, the $arg scope will be marked as "read-only" so attempts to modify it will blow up.
-
-
-//   Another thing I want to provide for is composing and defining at the same time. This allows for a form of inheritance.
-//   So instead of this:
-//        copy = base_obj
-//        a = copy -> []   // or however we designate an empty array? maybe with a comma?
+//	1. "Inheritance"
+//
+//   I want to provide for composing and defining at the same time, which
+//   is what we need to mimic inheritance. In most cases we don't want to modify the
+//   original (or "base" object). So we want to do something like this:
+//        a = ~~base_obj -> ,
 //        with a
 //             ...
-//        // update: based on my answer below dated 2017-04-18, we could write the example like this:
-//        a = ~~base_obj -> []
-//        with a
-//             ...
+//   The tilde expansion creates a copy of the object, instead a reference (which is the
+//   normal result of composition), which is then composed with an empty array `,`.
+//   And then a `with` statement allows us to declare stuff inside the newly composed
+//   object.
 //   All of the above can be accomplished with:
 //        a <- base_obj
 //             ...
-//   Something to note: normally composing would create a reference to the original objects, but in this case we probably don't want a reference,
-//   we want a copy. So what mechanism do we have to allow the alternative? In other words, how do we get a copy of `base_obj`, if that is what we want, in the following:
-//        a = base_obj -> []
-//   instead of a reference, which would be the normal result?
-//   [2017-04-18] I know the answer: we use expansion:
-//        a = ~~base_obj -> []
-//   That will make a composition of a _copy_ of `base_obj`above an empty object and the result will be stored in `a`.
+//	This is a form of composition, but it composes with a copy of the original, and
+//	allows for block statements to follow. If we make it right-associative, we can chain
+//	these together as well.
 
-//   So maybe the one remaining question is how do we assign a reference of an object? or store a reference to an object:
-//        a = ( parent=<ref to some object>, name="fred" )
-//   The C-like syntax (also PHP) would be to use `&` as a prefix in front of the object name.
+//	2. References
+//
+//	How do we create references outside of composing? My thoughts so far are to use
+//	ampersand, like C and PHP.
+//        a = ( parent=&parent_obj, name="fred" )
+//	Maybe this is a weak reference by default, and double ampersand makes it strong.
 
-//   [Updated on 2017-04-17] When composing, we can assign a "badge" to an object so that we can do name lookup directly on that object,
-//   rather than up the normal hierarchy chain.
+//	3. Badges
+//   When composing, a "badge" can be assigned to the intermediate objects, giving us a
+//	way to later jump directly to that object's scope for name resolution, skipping over
+//	the normal hierarchy chain.
 //   Use the pound sign (octothorp) to badge an object during composition:
 //        base_obj#base -> oth_obj#child -> some_func()
-//   Later use the ampersand to access the badged object directly (for example inside a function with an $obj in scope):
+//   Later use the ampersand to access the badged object directly.
+//	For example, within `some_func` we could write:
 //        @base.parent_func()
+//	which is equivalent to
+//		$obj@base.parent_func()
 //   Or, if we are saving the composition:
 //        comp = base_obj#base -> oth_obj#child
 //        comp@base.some_func()   //(1)
 //        comp.some_func()   //(2)
-//   Version 1 will grab the function `some_func` defined on the original base_obj array, ignoring it if it exists on `oth_obj`; whereas version 2
-//   will undergo a normal name resolution search starting with `oth_obj`.
+//   Version 1 will grab the function `some_func` defined on the original base_obj array,
+//	skipping past any such object if defined on `oth_obj`; whereas version 2 will undergo
+//	a normal name resolution search starting with `oth_obj`.
 
-//   Also need to sort out how strong and weak references will work. They only make sense in assignments
-//   (so a new name is pointing at a reference to an existing name) or maybe return statements from functions.
-//   This includes assignments that are happening inside an array construction. Let's go see how PHP handles this.
 
 
 grammar Wry;
@@ -71,7 +63,8 @@ tokens { INDENT, DEDENT }
 
 @lexer::members {
 
-     private boolean pendingDent = true;   // Starting out `true` means we'll capture any whitespace at the beginning of the script.
+	// Starting out `true` for `pendingDent` will capture whitespace at beginning of script.
+	private boolean pendingDent = true;
      private int indentCount = 0;
      private java.util.LinkedList<Token> tokenQueue = new java.util.LinkedList<>();
      private java.util.Stack<Integer> indentStack = new java.util.Stack<>();
@@ -80,6 +73,7 @@ tokens { INDENT, DEDENT }
 
      private CommonToken createToken(int type, String text, Token next) {
           CommonToken token = new CommonToken(type, text);
+          // If we have an `initialIndentToken` use it to set locations in `token`.
           if (null != initialIndentToken) {
                token.setStartIndex(initialIndentToken.getStartIndex());
                token.setLine(initialIndentToken.getLine());
@@ -97,21 +91,21 @@ tokens { INDENT, DEDENT }
 
           // Grab the next token and if nothing special is needed, simply return it.
           Token next = super.nextToken();
-          //NOTE: This would be the appropriate spot to count whitespace or deal with NEWLINES, but it is already handled with custom actions down in the lexer rules.
+	          //NOTE: This would be the appropriate spot to count whitespace or deal with NEWLINES,
+     	     // but it is already handled with custom actions down in the lexer rules.
           if (pendingDent && null == initialIndentToken && NEWLINE != next.getType()) { initialIndentToken = next; }
           if (null == next || HIDDEN == next.getChannel() || NEWLINE == next.getType()) { return next; }
 
-          // Handle EOF; in particular, handle an abrupt EOF that comes without an immediately preceding NEWLINE.
+          // Handle EOF; in particular, handle an abrupt EOF that comes without a NEWLINE.
           if (next.getType() == EOF) {
                indentCount = 0;
-               // EOF outside of `pendingDent` state means we did not have a final NEWLINE before the end of file.
-               if (!pendingDent) {
+               if (!pendingDent) {   // We didn't have a final NEWLINE...
                     initialIndentToken = next;
                     tokenQueue.offer(createToken(NEWLINE, "NEWLINE", next));
                }
           }
 
-          // Before exiting `pendingDent` state we need to queue up proper INDENTS and DEDENTS.
+          // Before exiting `pendingDent` state queue up proper INDENTS and DEDENTS.
           while (indentCount != getSavedIndent()) {
                if (indentCount > getSavedIndent()) {
                     indentStack.push(indentCount);
@@ -132,6 +126,8 @@ script
      :    ( NEWLINE | statement )* EOF
      ;
 
+
+
 /*
 * statement
 */
@@ -143,6 +139,8 @@ statement
 
 inlineStatementList
      :    smallStatement ( ';' smallStatement )*  ';'? ;
+
+
 
 /*
 * smallStatement
@@ -161,6 +159,8 @@ flowStatement
 //   |    'assert' exprList
 //   |    'yield' exprList
      ;
+
+
 
 /*
 * compound statement
@@ -200,6 +200,7 @@ withStatement
 assignBlock
      :    nameRef blockStatements
      |    exprList ':' blockStatements
+     |	arrayLiteral blockStatements
      ;
 
 block
@@ -217,12 +218,14 @@ doableBlock
      |    forStatement
      ;
 
+
+
 /*
 * expressions
 */
 
 exprList
-     :    expr ( ',' expr)* ','?
+     :    expr ( ',' expr )* ','?
      ;
 
 expr
@@ -274,6 +277,8 @@ atom
 TildeName : '~' Name ;
 DubTildeName : '~~' Name ;
 
+
+
 /*
 * names
 */
@@ -306,13 +311,7 @@ SpecialName : '$' PlainName ;
 
 Label : '#' NameChar+ ;
 
-/*
-*    What does it mean to type `&a.fred` as opposed to `a.&fred`? I don't think we want to put the & in the middle of the dot operator. So it seems more natural to come first.
-*    So does that make it a token? Or is it an operator?
-*    It can't be just in front of a name, it needs to be in front of a reference.
-*    Will this ever be used other than in assignment? YES: it could be in a return statement or in an array assignment used as an argument to a function.
-*    So it seems like it is part of object reference, not really an operator
-*/
+
 
 /*
 * literals
@@ -323,16 +322,21 @@ literal
      |    StringLiteral
      |    booleanLiteral
      |    nullLiteral
+     |    arrayLiteral
      ;
 
 booleanLiteral : 'true' | 'false' ;
 
 nullLiteral : 'null' ;
 
+arrayLiteral : ',' ;
+
 numericLiteral
      :    integerLiteral
      |    FloatingPointLiteral
      ;
+
+
 
 /*
 * integer literal
@@ -362,6 +366,8 @@ HexadecimalLiteral : '0x' HexDigit HexChars? ;
 fragment HexDigit : [0-9a-fA-F] ;
 fragment HexChars : ( HexDigit | '_' )+ ;
 
+
+
 /*
 * floating point literal
 */
@@ -372,6 +378,8 @@ FloatingPointLiteral
      ;
 fragment DecimalExponent : [eE] (PLUS|MINUS)? DecimalLiteral ;
 fragment HexadecimalExponent : [pP] (PLUS|MINUS)? DecimalLiteral ;
+
+
 
 /*
 * string literal
@@ -389,6 +397,8 @@ StringEscapeChar
      |    '\\u' '{' HexDigit HexDigit HexDigit HexDigit HexDigit HexDigit HexDigit HexDigit '}'
      ;
 
+
+
 /*
 * comments and whitespace
 */
@@ -396,6 +406,20 @@ StringEscapeChar
 BlockComment : '/*' ( BlockComment | . )*? '*/' -> channel(HIDDEN) ;   // allow nesting comments
 LineComment : '//' ~[\r\n]* -> channel(HIDDEN) ;
 
-NEWLINE : ( '\r'? '\n' | '\r' ) { if (pendingDent) { setChannel(HIDDEN); } pendingDent = true; indentCount = 0; initialIndentToken = null; } ;
+NEWLINE
+	:	( '\r'? '\n' | '\r' )
+	{
+		if (pendingDent) { setChannel(HIDDEN); }
+		pendingDent = true;
+		indentCount = 0;
+		initialIndentToken = null;
+	}
+	;
 
-WS : [ \t]+ { setChannel(HIDDEN); if (pendingDent) { indentCount += getText().length(); } } ;   //TODO: Swift includes \u000B, \u000C, and \u0000
+WS
+	:	[ \t]+   //TODO: Swift includes \u000B, \u000C, and \u0000
+	{
+		setChannel(HIDDEN);
+		if (pendingDent) { indentCount += getText().length(); }
+	}
+	;

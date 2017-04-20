@@ -8,7 +8,7 @@ A scripting language for web authoring.
 Grammar
 -----------
 
-See [wry grammar](grammars/wry.g4).
+See [wry grammar](grammars/Wry.g4).
 
 
 
