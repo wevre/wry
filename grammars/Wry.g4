@@ -8,9 +8,9 @@
 *
 */
 
-//	Stuff still floating around as ideas but not working in the grammar yet.
+//   Stuff still floating around as ideas but not working in the grammar yet.
 
-//	1. "Inheritance"
+//   1. "Inheritance"
 //
 //   I want to provide for composing and defining at the same time, which
 //   is what we need to mimic inheritance. In most cases we don't want to modify the
@@ -25,35 +25,35 @@
 //   All of the above can be accomplished with:
 //        a <- base_obj
 //             ...
-//	This is a form of composition, but it composes with a copy of the original, and
-//	allows for block statements to follow. If we make it right-associative, we can chain
-//	these together as well.
+//   This is a form of composition, but it composes with a copy of the original, and
+//   allows for block statements to follow. If we make it right-associative, we can chain
+//   these together as well.
 
-//	2. References
+//   2. References
 //
-//	How do we create references outside of composing? My thoughts so far are to use
-//	ampersand, like C and PHP.
+//   How do we create references outside of composing? My thoughts so far are to use
+//   ampersand, like C and PHP.
 //        a = ( parent=&parent_obj, name="fred" )
-//	Maybe this is a weak reference by default, and double ampersand makes it strong.
+//   Maybe this is a weak reference by default, and double ampersand makes it strong.
 
-//	3. Badges
+//   3. Badges
 //   When composing, a "badge" can be assigned to the intermediate objects, giving us a
-//	way to later jump directly to that object's scope for name resolution, skipping over
-//	the normal hierarchy chain.
+//   way to later jump directly to that object's scope for name resolution, skipping over
+//   the normal hierarchy chain.
 //   Use the pound sign (octothorp) to badge an object during composition:
 //        base_obj#base -> oth_obj#child -> some_func()
 //   Later use the ampersand to access the badged object directly.
-//	For example, within `some_func` we could write:
+//   For example, within `some_func` we could write:
 //        @base.parent_func()
-//	which is equivalent to
-//		$obj@base.parent_func()
+//   which is equivalent to
+//        $obj@base.parent_func()
 //   Or, if we are saving the composition:
 //        comp = base_obj#base -> oth_obj#child
 //        comp@base.some_func()   //(1)
 //        comp.some_func()   //(2)
 //   Version 1 will grab the function `some_func` defined on the original base_obj array,
-//	skipping past any such object if defined on `oth_obj`; whereas version 2 will undergo
-//	a normal name resolution search starting with `oth_obj`.
+//   skipping past any such object if defined on `oth_obj`; whereas version 2 will undergo
+//   a normal name resolution search starting with `oth_obj`.
 
 
 
@@ -63,8 +63,8 @@ tokens { INDENT, DEDENT }
 
 @lexer::members {
 
-	// Starting out `true` for `pendingDent` will capture whitespace at beginning of script.
-	private boolean pendingDent = true;
+     // Starting out `true` for `pendingDent` will capture whitespace at beginning of script.
+     private boolean pendingDent = true;
      private int indentCount = 0;
      private java.util.LinkedList<Token> tokenQueue = new java.util.LinkedList<>();
      private java.util.Stack<Integer> indentStack = new java.util.Stack<>();
@@ -91,8 +91,8 @@ tokens { INDENT, DEDENT }
 
           // Grab the next token and if nothing special is needed, simply return it.
           Token next = super.nextToken();
-	          //NOTE: This would be the appropriate spot to count whitespace or deal with NEWLINES,
-     	     // but it is already handled with custom actions down in the lexer rules.
+               //NOTE: This would be the appropriate spot to count whitespace or deal with NEWLINES,
+               // but it is already handled with custom actions down in the lexer rules.
           if (pendingDent && null == initialIndentToken && NEWLINE != next.getType()) { initialIndentToken = next; }
           if (null == next || HIDDEN == next.getChannel() || NEWLINE == next.getType()) { return next; }
 
@@ -200,7 +200,7 @@ withStatement
 assignBlock
      :    nameRef blockStatements
      |    exprList ':' blockStatements
-     |	arrayLiteral blockStatements
+     |    arrayLiteral blockStatements
      ;
 
 block
@@ -407,19 +407,19 @@ BlockComment : '/*' ( BlockComment | . )*? '*/' -> channel(HIDDEN) ;   // allow 
 LineComment : '//' ~[\r\n]* -> channel(HIDDEN) ;
 
 NEWLINE
-	:	( '\r'? '\n' | '\r' )
-	{
-		if (pendingDent) { setChannel(HIDDEN); }
-		pendingDent = true;
-		indentCount = 0;
-		initialIndentToken = null;
-	}
-	;
+     :    ( '\r'? '\n' | '\r' )
+     {
+          if (pendingDent) { setChannel(HIDDEN); }
+          pendingDent = true;
+          indentCount = 0;
+          initialIndentToken = null;
+     }
+     ;
 
 WS
-	:	[ \t]+   //TODO: Swift includes \u000B, \u000C, and \u0000
-	{
-		setChannel(HIDDEN);
-		if (pendingDent) { indentCount += getText().length(); }
-	}
-	;
+     :    [ \t]+   //TODO: Swift includes \u000B, \u000C, and \u0000
+     {
+          setChannel(HIDDEN);
+          if (pendingDent) { indentCount += getText().length(); }
+     }
+     ;
