@@ -12,43 +12,6 @@ See [wry grammar](grammars/wry.g4).
 
 
 
-Questions
------------
-
-Do we allow assignment to be an operator that returns a value? That is how it works in
-PHP, but in Swift it is forbidden (not by the grammar, by the way, but by something else
-downstream from the parser). But I find it useful to be able to capture a value at the
-same time as testing and then use that captured value:
-
-     a = <some hairy expression>
-     if a { // assuming we can test `a` even if it is not strictly a boolean value
-          <do something with a>
-     }
-
-     if a = <some hairy expression> {
-          <do something with a>
-     }
-
-Do we to allow any expression as condition-clauses? or only those that return boolean
-values? PHP has a broad set of things it will consider `false`, including empty strings,
-empty arrays, zero; whereas Lua only considers `false` and `nil` to be false and all those
-others are considered true. How do we handle a condion-clause that evaluates to an array?
-Do all the members of the array have to be true to continue?  (In PHP it only depends on
-whether or not the array is empty.)
-
-Maybe we say: whatever expression is there in the condition clause will be cast (coerced)
-to a boolean, and there is a set of rules that control that. Maybe for an array, the first
-item of the array is used to determine the boolean. In PHP an array is true if it isn't
-empty.
-
-As of 2017-03-01 my thoughts on this subject have landed on this: assignments are
-statements. The condition in an `if` test must be expressions, so assignment is not
-allowed there. But that will have to be enforced by the interpreter, because currently in
-the grammar, assignment is a type of expression (it has to be that way for declaring
-arrays).
-
-
-
 Types
 -----------
 
@@ -76,7 +39,8 @@ Arrays are an ordered hashmap. That means it preserves the order of the keys as 
 inserted into the array. (Implementing it means something like a hashmap combined with
 a linked list.)
 
-To create an array, separate array elements with commas. A trailing comma is allowed.
+To create an array, separate array elements with commas. A trailing comma is allowed, and
+in fact is often useful to coerce something to an array.
 An array can be a simple list of other types (no keys), in which case incrementing integer
 keys will automatically be applied. Or it can be more like a dictionary with keys and
 values, separate by colons and commas.
@@ -160,14 +124,6 @@ we can use a bare comma:
                'name': 'fred'
                'age': 34
 
-What if we need to declare an array of arrays? I think we can do that with parens and
-trailing commas:
-
-     b = (1, 2, 3)
-     c = b + 4
-     d = b + (4,5,6)
-     e = b + ((4,5,6),)
-
 A bare expression (something that is not part of an assignment statement) will act as an
 assignment into the local scope, using the next integer key.
 
@@ -181,6 +137,14 @@ Do we want something like that? I'm currently thinking we use the `+` operator:
      b += 'next'
 
      a = b + ( 'surname' : 'thompson' )
+
+What if we need to declare an array of arrays? I think we can do that with parens and
+trailing commas:
+
+     b = (1, 2, 3)
+     c = b + 4
+     d = b + (4,5,6)
+     e = b + ((4,5,6),)
 
 
 
@@ -330,7 +294,7 @@ I think to make this work, we'll need hooks that are called when array items are
 `get`. Those could be buried away and hidden from the user, or made available for anyone
 to take advantage of them.
 
-I'm thinking something similar ($fil) will be used to manage access to the file system.
+I'm thinking something similar (`$fil`) will be used to manage access to the file system.
 
 
 
@@ -353,9 +317,9 @@ searching will happen implicitly in the given order. Note that `$arg` is read-on
 whereas `$obj` is a reference to the original object, so changes to `$obj` inside the
 function will be visible outside (or after) the function.
 
-When passing similar args from one function to another, the tilde syntax (`~name`) becomes
-very useful. And if an entire array needs to be passed, used double tilde syntax:
-`~~name`.
+When passing similarly named arguments from one function to another, the tilde syntax
+(`~name`) becomes very useful. And if an entire array needs to be passed, used double
+tilde syntax: `~~name`.
 
 When an array, `b`, is composed with a function, the search to resolve the function name
 begins in `b` and then (if not found) search begins in the local scope. The result is that
@@ -385,6 +349,12 @@ to make a good guess what it does, and do something strange like this:
 and would probably get the results we expected. Now the `fullName` function has an `$obj`
 array with the entries it expects to see.
 
+This is sort of a convoluted example because if all we really cared about was composing
+a full name, we might want to pass first and last names in as (read-only) arguments,
+rather than composing with an object. But here we are trying to provide an example of an
+object (the Person) that includes data and functions to work on that data.
+So there you go.
+
 As a corollary to this, if we have a function with the same name defined in the local
 scope, it *won't* get called by the straightforward composition operator. We instead have
 to explicitly refer to it's containing scope (`$loc`), like so:
@@ -404,7 +374,7 @@ The `for` block operates on an array in a loop, and at each iteration provides v
 
      total = sum(1, 2, 3, 4) // returns 10
 
-Often the variables we use to construct an array share the same name as the key we want to
+Often the variables we use to construct an array share the same name as the key we
 use in the array:
 
      values = ( 'name' : name, 'id' : id, )
@@ -421,7 +391,8 @@ A function can return a value, using the `return` statement. If a function does 
 explicitly return a value and is chained to another function, then the original `$obj`
 scope will be passed to the next function in the chain. If it returns a value, however,
 then that value will take over and replace the `$obj` scope for the next function in the
-chain.
+chain. (Note that a function that returns a value is interpreted, at the call site, as an
+expression and the returned value will be added to the current scope.)
 
 Suppose we have this function defined:
 
@@ -456,17 +427,22 @@ are checked first.)
 Here is an example from PHP and wCommon. We have a function, `addButtons`, that takes
 an array of button definitions (each of those is itself an array), rearranges the info for
 each button into the standard parts of an HTML element, and calls `addElement` to add the
-button to our eventual HTML output (also wrapping it in its own 'p' element).
+button to our eventual HTML output (also wrapping it in its own 'p' element). `addButtons`
+is defined in a 'FormBuilder' object that has a member, `composer`, to accumulate the
+HTML output. So in the PHP code, `$this` refers to the FormBuilder, and `composer` is its
+member.
+
 Here is how this function looks in PHP:
 
-     // in PHP
+     // in PHP   //[2017-04-20: is this the latest version of this function?]
      function addButtons($butts) {
           $this->composer->beginElement('p');
           foreach ($butts as $items) {
                if (!$items['type']) { $items['type'] = 'submit'; }
                if (!$items['name']) { $items['name'] = self::KEY_ACTION; }
                if (!$items['id']) { $items['id'] = $items['name'] . '-' . $items['value']; }
-               $attribs = array_merge(array_intersect_key($items, array_flip('type', 'name', 'id', 'value')), $items['xattr']);
+               $attribs = array_intersect_key($items, array_flip('type', 'name', 'id', 'value'));
+               $attribs = array_merge($attribs, $items['xattr']);
                $this->composer->addElement('button', $items['class'], $attribs, $items['content']);
           }
           $this->composer->endElement();
@@ -475,20 +451,21 @@ Here is how this function looks in PHP:
 If a button wasn't defined with a 'type', then it gets the default 'submit'. A default
 'name' is similarly supplied. If it doesn't have an 'id', then one is created by
 concatenating 'name' and 'value'. The caller can pass in extra attributes via 'xattr'.
-And so on (you can go check it out in wCommon for more details).
+And so on (you can go check it out in [wCommon](https://github.com/wevrem/wCommon) for
+more details).
 
 And here is how it could look in wry:
 
      // in wry
      func addButtons   // pass in an array of button objects
-          composer.beginElement('p')
+          composer->beginElement('p')
           for $args
                $val.type ?= 'submit'
                $val.name ?= keyAction
                $val.id ?= $val.name + '-' + $val.action
                attribs = $val['type', 'name', 'id', 'value'] + $val.xattr
                composer.addElement('button', ~$val.class, ~attribs, $val.content)
-          composer.endElement()
+          composer->endElement()
 
 
 We would call this function like so:
@@ -501,7 +478,7 @@ We would call this function like so:
 
 where `fb` is an object representing a `FormBuilder`.
 
-With records, *a la* SAM, we could even do this:
+With records, *a la* [SAM](https://github.com/mbakeranalecta/sam), we could even do this:
 
      buttons :: value, content
           'submit', 'Submit'
@@ -515,7 +492,9 @@ composer object:
           $filtered = array_filter($attribs, function ($v) { return !empty($v); } );
           $attribString = implode(' ', array_map(function($k, $v) { return "$k=\"$v\""; }, array_keys($filtered), $filtered));
           $empty = self::isEmptyElement($elem);
-          return '<' . $elem . wrapIfCe($class, ' class="', '"') . prefixIfCe($attribString, ' ') . ( $empty ? '' : '>' . $content ) . ( $close ? ( $empty ? ' />' : "</$elem>" ) : '' );
+          return '<' . $elem . wrapIfCe($class, ' class="', '"')
+               . prefixIfCe($attribString, ' ') . ( $empty ? '' : '>' . $content )
+               . ( $close ? ( $empty ? ' />' : "</$elem>" ) : '' );
      }
 
      // in wry
