@@ -1,3 +1,8 @@
+//[2017-04-20: Let's redo this file as an example of wComposer written in wry
+// It's already started, but some of my ideas about the syntax have changed and this
+// needs to be updated.]
+
+
 // Helper class for constructing HTML elements
 //
 // copyright 2016 Mike Weaver
@@ -16,7 +21,7 @@ constants
 	kContent = 'content'
 	kAttribs = 'attribs'
 
-// 
+//
 XmlComposer
 	fIndent = true
 	fDebug = true
@@ -27,7 +32,7 @@ XmlComposer
 	sGetIndent = func
 		guard fIndent else return ''
 		(sBuffer ? constants.EOL : '') + "\t"->repeat(qeTags->count)
-	
+
 	// Begins an HTML element with an opening tag, pushing it onto the qeTags stack.
 	// Balance each call to `beginElement` with a subsequent call to `endElement`.
 	beginElement = func   //(e, arb?, s?, c?)
@@ -50,7 +55,7 @@ XmlComposer
 		sBuffer += s + sGetElement(e, ~arb, ~s, ~c, fClose=true)
 
 	// Used by both `addElement` and `beginElement` to generate the string of the element.
-	sGetElement = func   //(e, arb?, s?, fClose?, c?)	
+	sGetElement = func   //(e, arb?, s?, fClose?, c?)
 		e ?= $0
 		if c then arb.class = c
 		RegisterClass(arb.class)
@@ -79,7 +84,7 @@ XmlComposer
 		fReset ?= true
 		defer if fReset then resetBuffer()
 		return sBuffer
-		
+
 	resetBuffer = func
 		sBuffer = ''
 
@@ -134,13 +139,13 @@ XmlComposer
 // This doesn't really work. We're not letting you initialize an array with a function call.
 // But you can create an init function that you can call...
 Link
-	
+
 	// or this could be create and we could call Link.create to return an object that is initialized with whatever a Link needs to be or have.
 	init = func   //(s, href?, c?, arb?)
 		$obj.s ?= $0 ?= 0
 		$obj.class ?= c
 		$obj.href ?= href
-		
+
 	create = func
 		with $arg
 			s ?= $0
@@ -153,19 +158,19 @@ Link
 		cp ?= XmlComposer()
 		e = ( href ? 'a' : 'span' )
 		return cp->getElement(e, ~arb, ~s, fClose=true)
-	
+
 my_link = Link->create('tickets page', c='alink', href='/tickets')
 my_link->toString()->print()
 
 // How do we make a special subclass, ActionLink, that defaults the class to 'alink'?
 // let -> be "compose with" and <- "compose into" or "compose from" (or, "inherit from")
 ActionLink <- Link#
-	
+
 	// we would use something like this if we wanted to call super.
 	init = func
 		init@Link(~~$arg)
 		$obj.class ?= 'alink'
-	
+
 uSave = Url
 uSave->init(ark=('ac', 'id'))
 lSave = ActionLink
@@ -197,7 +202,7 @@ Url   //(sScheme?, sHost?, sPath?, arp?, ark?, sFrag?)
 		arp->append(ark->filterRequest())
 		sp = arp->filter()->map(sFromP)->implode('&')->sPrefixIfCe('?')
 		return sScheme->sSuffixIfCe('://') + sHost + spath + sp + sFrag->sPrefixIfCe('#')
-			
+
 
 
 // So here's an idea: Use colon when mapping a pair and both are strings or expressions that evaluate
@@ -223,7 +228,7 @@ Anything you compose on the left side of a function will get composed as $obj in
 you can chain functions that return object, which will become the $obj to the next function:
 
 	arr1->filter()->map(myMap)->implode(',')
-	
+
 suppose you have a function that returns a function, say `adder` and you want to compose with that result:
 
 	myNums->(getAdder())()
@@ -234,27 +239,27 @@ suppose you have a function that returns a function, say `adder` and you want to
 	adder = getAdder()
 	pre_compose = myNums->adder // this doesn't execute, but gets everything composed and ready to execute
 	pre_compose()
-	
+
 That last one is interesting. It would let you run the same function on an array of args, for example
 
 This is an explicit call:
 
 	myobj->myobj.method()
-	
+
 which makes sure that method has myobj in its $obj scope.
 
 But that is annoying, so we can just write
 
-	myobj.method()
-	
+	myobj->method()
+
 and myobj will implicitly be in method's $obj scope.
 
 But it won't automatically be. if you copy it out:
 
 	meth_copy = myobj.method
-	
+
 	meth_copy() // this won't have anything in the $obj scope.
-	
+
 
 
 //THOUGHTS:
