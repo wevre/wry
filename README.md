@@ -428,44 +428,44 @@ Here is an example from PHP and wCommon. We have a function, `addButtons`, that 
 an array of button definitions (each of those is itself an array), rearranges the info for
 each button into the standard parts of an HTML element, and calls `addElement` to add the
 button to our eventual HTML output (also wrapping it in its own 'p' element). `addButtons`
-is defined in a 'FormBuilder' object that has a member, `composer`, to accumulate the
-HTML output. So in the PHP code, `$this` refers to the FormBuilder, and `composer` is its
+is defined in a 'FormBuilder' object that has a member, `cp`, a Composer, to accumulate
+the HTML output. So in the PHP code, `$this` refers to the FormBuilder, and `cp` is its
 member.
 
 Here is how this function looks in PHP:
 
-     // in PHP   //[2017-04-20: is this the latest version of this function?]
+     // in PHP
      function addButtons($butts) {
-          $this->composer->beginElement('p');
+          $this->cp->beginElement('p');
           foreach ($butts as $items) {
                if (!$items['type']) { $items['type'] = 'submit'; }
                if (!$items['name']) { $items['name'] = self::KEY_ACTION; }
                if (!$items['id']) { $items['id'] = $items['name'] . '-' . $items['value']; }
                $attribs = array_intersect_key($items, array_flip('type', 'name', 'id', 'value'));
                $attribs = array_merge($attribs, $items['xattr']);
-               $this->composer->addElement('button', $items['class'], $attribs, $items['content']);
+               $this->cp->addElement('button', $attribs, $items['content']);
           }
-          $this->composer->endElement();
+          $this->cp->endElement();
      }
 
 If a button wasn't defined with a 'type', then it gets the default 'submit'. A default
 'name' is similarly supplied. If it doesn't have an 'id', then one is created by
-concatenating 'name' and 'value'. The caller can pass in extra attributes via 'xattr'.
-And so on (you can go check it out in [wCommon](https://github.com/wevrem/wCommon) for
-more details).
+concatenating 'name' and 'value'. The caller can pass in extra attributes (such as "class"
+or "onclick") via 'xattr'. And so on (you can go check it out in
+[wCommon](https://github.com/wevrem/wCommon) for more details).
 
 And here is how it could look in wry:
 
      // in wry
      func addButtons   // pass in an array of button objects
-          composer->beginElement('p')
+          cp->beginElement('p')
           for $args
                $val.type ?= 'submit'
                $val.name ?= keyAction
-               $val.id ?= $val.name + '-' + $val.action
-               attribs = $val['type', 'name', 'id', 'value'] + $val.xattr
-               composer->addElement('button', ~$val.class, ~attribs, ~$val.content)
-          composer->endElement()
+               $val.id ?= $val.name + '-' + $val.value
+               attribs = $val['type', 'id', 'name', 'value'] + $val.xattr
+               cp->addElement('button', ~attribs, ~$val.content)
+          cp->endElement()
 
 
 We would call this function like so:
@@ -485,24 +485,33 @@ With records, *a la* [SAM](https://github.com/mbakeranalecta/sam), we could even
           'cancel', 'Cancel'
 
 Let's look at the function that the one above relies on, it is `getElement` in the
-composer object:
+composer object. This has an interesting (and probably poorly designed) signature where it
+will accept an array of attributes, but if instead the caller passes a string, it will be
+interpreted as a "class" attribute and an attribute array constructed from it.
+This makes it convenient to call the function with a
+simple class name (which will often be the use case) instead of having to construct an
+array around that class name. In wry we don't have to do those sorts of gymnastics.
 
-     // in PHP   //[2017-04-20: is this the latest version of this function?]
-     protected static function getElement($elem, $class='', $attribs=[], $content='', $close=false) {
-          $filtered = array_filter($attribs, function ($v) { return !empty($v); } );
-          $attribString = implode(' ', array_map(function($k, $v) { return "$k=\"$v\""; }, array_keys($filtered), $filtered));
-          $empty = self::isEmptyElement($elem);
-          return '<' . $elem . wrapIfCe($class, ' class="', '"')
-               . prefixIfCe($attribString, ' ') . ( $empty ? '' : '>' . $content )
-               . ( $close ? ( $empty ? ' />' : "</$elem>" ) : '' );
+     // in PHP
+     protected static function getElement($elem, $attribs=[], $content='', $close=false) {
+          if (is_string($attribs)) { $attribs = [ 'class'=>$attribs ]; }
+          else if (!is_array($attribs)) { $attribs = []; }
+          if ($class = $attribs['class']) { self::registerClass($class); }
+          $attribString = implode(' ', array_key_map('attribParam', array_filter($attribs, 'is_not_null')));   //(1)
+          if (self::isEmptyElement($elem)) {
+               return '<' . $elem . prefixIfCe($attribString, ' ') . ' />';
+          } else {
+               return '<' . $elem . prefixIfCe($attribString, ' ') . '>' . $content . ( $close ? "</$elem>" : '' );
+          }
      }
 
      // in wry
      func getElement   //(elem, class?, attribs?, content?, close?=false)
           if class attribs.class = class
+          registerClass(attribs.class)
           s
                "<" + $0 + " "
-               attribs->filtered(notEmpty)->mapped(composeAttrib)->joined(' ')
+               attribs->filtered()->mapped(composeAttrib)->joined(' ')   //(1)
                if emptyElements->contains($0) " />"
                else
                     ">" + content
@@ -510,18 +519,30 @@ composer object:
           return s->joined()
      }
 
+In both versions, the logic at (1) turns the array of keys and values into a string that
+will work as
+attributes of an HTML tag, like so:
+
+     key1="val1" key2="val2" ...
+
+The helper functions would be defined as follows. Note that the function passed in to
+`mapped` will be called with two arguments: `key` and `val`.
+
+     func composeAttrib
+          return key + "=\"" + val + "\""
+
 Note: this is an example of something cool: when we have to generate a string from pieces
 and have logic that turns on or off pieces, the simple way to do it is to declare an array
 in a block, and make use of flow control statements inside the block. Then at the end we
-join() the pieces of the array.
+join the pieces of the array.
 
 Composing can be chained: `firstArray -> secondArray -> myFunc` means both arrays will end
-up being sent as args to the functin `myFunc`. No, they will not be sent as separate args.
+up being sent as `$obj` to the function `myFunc`.
 Inside `myFunc`, `$obj` will be a composition of both arrays, not that `myFunc` will be
 able to distinguish them. Really it means that when resolving names, `secondArray` will be
 searched first and `firstArray` will be searched last. Name lookup to retrieve a value
-will work its way up the chain. Name lookup for assignment will stop at the first level of
-the hierarchy.
+will work its way down the chain. Name lookup for assignment will stop at the first level
+of the hierarchy.
 
 You can pre-compose and then pass that to a function later:
 
@@ -534,13 +555,16 @@ two originals, and and they are combined in a hierarchy, like a stack.
 
 What do you get when you compose different things?
 
-     myArray -> anotherArray   // returns an array that contains elements from both `myArray` and `anotherArray`. For any keys that are the same, they are organized into an hierarchy relationship, like a stack.
+     myArray -> anotherArray   // returns an array that combines both `myArray` and `anotherArray`.
+     // They won't be merged, they will be arranged more like a stack with `anotherArray`
+     // at the top and, thus, searched first.
 
      anArray -> aFunction   // returns a function with `anArray` composed as its `$obj`
 
-     anArray -> map(mapFunc)   // this composes `anArray` with the `map` function and then calls the `map` function
+     anArray -> map(mapFunc)   // this composes `anArray` with, and then calls, the `map` function
 
-     anArray->myFunc<myArgs>   // composes `anArray` with `myFunc` and arguments `myArgs`, but does not execute the function
+     anArray->myFunc<myArgs>   // composes `anArray` with `myFunc` using arguments `myArgs`
+     // but does not execute the function
 
 Arguments can be composed with a function, but the function not called, by using `<` and
 `>` around the arguments. If the result is further composed with arguments, or the
