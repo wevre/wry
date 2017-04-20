@@ -464,7 +464,7 @@ And here is how it could look in wry:
                $val.name ?= keyAction
                $val.id ?= $val.name + '-' + $val.action
                attribs = $val['type', 'name', 'id', 'value'] + $val.xattr
-               composer.addElement('button', ~$val.class, ~attribs, $val.content)
+               composer->addElement('button', ~$val.class, ~attribs, ~$val.content)
           composer->endElement()
 
 
