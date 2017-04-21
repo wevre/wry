@@ -37,6 +37,7 @@
 //   Maybe this is a weak reference by default, and double ampersand makes it strong.
 
 //   3. Badges
+//
 //   When composing, a "badge" can be assigned to the intermediate objects, giving us a
 //   way to later jump directly to that object's scope for name resolution, skipping over
 //   the normal hierarchy chain.
@@ -112,7 +113,7 @@ tokens { INDENT, DEDENT }
                     tokenQueue.offer(createToken(WryParser.INDENT, "INDENT" + indentCount, next));
                } else {
                     indentStack.pop();
-                    tokenQueue.offer(createToken(WryParser.DEDENT, "DEDENT"+getSavedIndent(), next));
+                    tokenQueue.offer(createToken(WryParser.DEDENT, "DEDENT" + getSavedIndent(), next));
                }
           }
           pendingDent = false;
@@ -122,6 +123,12 @@ tokens { INDENT, DEDENT }
 
 }
 
+
+
+/*
+* top level
+*/
+
 script
      :    ( NEWLINE | statement )* EOF
      ;
@@ -129,7 +136,7 @@ script
 
 
 /*
-* statement
+* statements
 */
 
 statement
@@ -139,12 +146,6 @@ statement
 
 inlineStatementList
      :    smallStatement ( ';' smallStatement )*  ';'? ;
-
-
-
-/*
-* smallStatement
-*/
 
 smallStatement
      :    flowStatement
@@ -163,7 +164,7 @@ flowStatement
 
 
 /*
-* compound statement
+* blocks
 */
 
 compoundStatement
@@ -173,6 +174,8 @@ compoundStatement
      |    tryStatement
      |    withStatement
      |    assignBlock
+     |    funcBlock
+     |    inheritBlock
      ;
 
 ifStatement
@@ -203,6 +206,14 @@ assignBlock
      |    arrayLiteral blockStatements
      ;
 
+funcBlock
+     :    'func' Name blockStatements
+     ;
+
+inheritBlock
+     :    nameRef ( '<-' nameRef )+ blockStatements
+     ;
+
 block
      :    inlineStatementList NEWLINE
      |    blockStatements
@@ -230,7 +241,7 @@ exprList
 
 expr
      :    '(' exprList ')'                         #groupExpr
-     |    expr '->' expr                           #composeExpr
+     |    expr Label? '->' expr Label?             #composeExpr
      |    expr '(' expr? ')'                       #executeExpr
      |    expr '<' expr '>'                        #argExpr
      |    sign=( PLUS | MINUS ) expr               #unarySignExpr
@@ -241,7 +252,7 @@ expr
      |    expr AND expr                            #andExpr
      |    expr OR expr                             #orExpr
      |    nameRef '=' expr                         #assignExpr
-     |<assoc=right>  expr ':' expr                 #assocExpr
+     |    <assoc=right>  expr ':' expr             #assocExpr
      |    atom                                     #atomExpr
      ;
 
@@ -262,20 +273,12 @@ functionExpression
      :    '{' inlineStatementList '}'
      ;
 
-// funcBlock
-//   :    inlineStatementList
-//   |    blockStatements
-//   ;
-
 atom
-     :    nameExpression
+     :    nameRef
      |    functionExpression
      |    literal
-     |    TildeName
-     |    DubTildeName
+     |    nameExpansion
      ;
-TildeName : '~' Name ;
-DubTildeName : '~~' Name ;
 
 
 
@@ -283,31 +286,23 @@ DubTildeName : '~~' Name ;
 * names
 */
 
-nameExpression
-     :    nameRef
-     |    '&' nameRef
-     |    '&&' nameRef
-     ;
-
 nameRef
-     :    Name trailer*
+     :    NamePrefix? Name nameTrailer*
      ;
 
-trailer
-     :    '[' expr ']'
-     |    '.' PlainName
+NamePrefix : '&' | '&&' | '@' | '$' ;
+
+nameTrailer
+     :    '[' exprList ']'   #keyLookup
+     |    '.' Name           #memberLookup
+     |    '@' Name           #badgeLookup
      ;
 
-Name
-     :    PlainName
-     |    SpecialName
-     ;
+nameExpansion : ( '~' | '~~' ) nameRef ;
 
-PlainName : NameHead NameChar*     ;
+Name : NameHead NameChar*     ;
 fragment NameHead : [_a-zA-Z] ;
 fragment NameChar : [0-9] | NameHead ;
-
-SpecialName : '$' PlainName ;
 
 Label : '#' NameChar+ ;
 

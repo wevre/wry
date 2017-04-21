@@ -529,7 +529,7 @@ The helper functions would be defined as follows. Note that the function passed 
 `mapped` will be called with two arguments: `key` and `val`.
 
      func composeAttrib
-          return key + "=\"" + val + "\""
+          return key + '="' + val + '"'
 
 Note: this is an example of something cool: when we have to generate a string from pieces
 and have logic that turns on or off pieces, the simple way to do it is to declare an array
