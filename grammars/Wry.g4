@@ -13,48 +13,60 @@
 //   1. "Inheritance"
 //
 //   I want to provide for composing and defining at the same time, which
-//   is what we need to mimic inheritance. In most cases we don't want to modify the
-//   original (or "base" object). So we want to do something like this:
-//        a = ~~base_obj -> ,
+//   is what we need to mimic inheritance. So we want to do something like this:
+//        a = base_obj -> ,
 //        with a
 //             ...
-//   The tilde expansion creates a copy of the object, instead a reference (which is the
-//   normal result of composition), which is then composed with an empty array `,`.
-//   And then a `with` statement allows us to declare stuff inside the newly composed
+//   If we want to compose with a copy of the base object (so that we can't alter it via
+//   the composition) then we can use the `~~` expansion operator, which creates a copy
+//   of the object, instead of a reference (which is the normal result of composition).
+//   The `with` statement allows us to declare stuff inside the newly composed
 //   object.
 //   All of the above can be accomplished with:
 //        a <- base_obj
 //             ...
-//   This is a form of composition, but it composes with a copy of the original, and
-//   allows for block statements to follow. If we make it right-associative, we can chain
-//   these together as well.
+//   This is a form of composition, but it also defines and opens a new scope for further
+//   declarations in the block statements that follow.
 
 //   2. References
 //
-//   How do we create references outside of composing? My thoughts so far are to use
-//   ampersand, like C and PHP.
-//        a = ( parent=&parent_obj, name="fred" )
-//   Maybe this is a weak reference by default, and double ampersand makes it strong.
+//   I've been thinking a lot about this, and I think all objects will have normal
+//   reference semantics. If one wants a copy instead of a reference, use the expansion
+//   operator `~~`. If we decide to do automatic reference counting instead of GC, then
+//   we can use the ampersand `&` to indicate a "weak" reference (meaning "strong" would
+//   be the default). Copies will be "copy on write" to make them more efficient.
 
 //   3. Badges
 //
 //   When composing, a "badge" can be assigned to the intermediate objects, giving us a
 //   way to later jump directly to that object's scope for name resolution, skipping over
 //   the normal hierarchy chain.
-//   Use the pound sign (octothorp) to badge an object during composition:
+//   Use the pound sign `#` to badge an object during composition:
 //        base_obj#base -> oth_obj#child -> some_func()
-//   Later use the ampersand to access the badged object directly.
-//   For example, within `some_func` we could write:
+//   Later use the ampersand `@` to access the badged object directly.
+//   For example within `some_func`, where we have an `$obj` scope, we could write:
 //        @base.parent_func()
 //   which is equivalent to
 //        $obj@base.parent_func()
 //   Or, if we are saving the composition:
-//        comp = base_obj#base -> oth_obj#child
+//        comp = base_obj#base -> oth_obj
 //        comp@base.some_func()   //(1)
 //        comp.some_func()   //(2)
-//   Version 1 will grab the function `some_func` defined on the original base_obj array,
-//   skipping past any such object if defined on `oth_obj`; whereas version 2 will undergo
-//   a normal name resolution search starting with `oth_obj`.
+//   Statement (1) will grab the function `some_func` defined on the original base_obj
+//   array, skipping past any such object if defined on `oth_obj`; whereas statement (2)
+//   will undergo a normal name resolution search starting with `oth_obj`.
+//   Badges don't make sense on the rightmost end of a composition, because that will be
+//   the "closest" end of the stack and you don't need a badge to reach it. Later on if
+//   a saved composition is composed with something else, a badge would apply to the
+//   (previously unavailable for badging) "nearest" or "right-most" end.
+//        next_comp = comp#foo -> next_obj
+//   is equivalent to adding the badge `foo` to `oth_obj` from the original composition:
+//        next_comp = base_obj#base -> oth_obj#foo -> next_obj
+//   That also means that this:
+//        some_obj#foo -> some_func()
+//   is allowed but is sort of pointless, because inside the function, using `@foo` is not
+//   necessary: that is where scope searches would start anyway (i.e., the badge isn't
+//   "skipping" anything).
 
 
 
@@ -183,13 +195,13 @@ ifStatement
      ;
 
 doStatement
-     :    'do' ( Label )? block ( 'then' block )?
-     |    'do' 'if' exprList ( Label )? block ( 'then' block )?
+     :    'do' Label? block ( 'then' block )?
+     |    'do' 'if' exprList Label? block ( 'then' block )?
      ;
 
 forStatement
-     :    'for' exprList ( Label )? block ( 'then' block )?
-     |    'for' exprList 'if' exprList ( Label )? block ( 'then' block )?
+     :    'for' exprList Label? block ( 'then' block )?
+     |    'for' exprList 'if' exprList Label? block ( 'then' block )?
      ;
 
 tryStatement
@@ -211,7 +223,7 @@ funcBlock
      ;
 
 inheritBlock
-     :    nameRef ( '<-' nameRef )+ blockStatements
+     :    nameRef ( '<-' exprList Label? )+ blockStatements?
      ;
 
 block
@@ -241,7 +253,7 @@ exprList
 
 expr
      :    '(' exprList ')'                         #groupExpr
-     |    expr Label? '->' expr Label?             #composeExpr
+     |    expr Label? '->' expr                    #composeExpr
      |    expr '(' expr? ')'                       #executeExpr
      |    expr '<' expr '>'                        #argExpr
      |    sign=( PLUS | MINUS ) expr               #unarySignExpr
@@ -290,7 +302,7 @@ nameRef
      :    NamePrefix? Name nameTrailer*
      ;
 
-NamePrefix : '&' | '&&' | '@' | '$' ;
+NamePrefix : '&' | '@' | '$' ;
 
 nameTrailer
      :    '[' exprList ']'   #keyLookup
