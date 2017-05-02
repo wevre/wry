@@ -8,7 +8,7 @@
 *
 */
 
-//   Stuff still floating around as ideas but not working in the grammar yet.
+//   Ideas not yet working in the grammar (or not yet tested).
 
 //   1. "Inheritance"
 //
