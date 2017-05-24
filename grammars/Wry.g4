@@ -104,8 +104,8 @@ tokens { INDENT, DEDENT }
 
           // Grab the next token and if nothing special is needed, simply return it.
           Token next = super.nextToken();
-               //NOTE: This would be the appropriate spot to count whitespace or deal with NEWLINES,
-               // but it is already handled with custom actions down in the lexer rules.
+               //NOTE: This would be the appropriate spot to count whitespace or deal with NEWLINES;
+               // instead, it is handled with custom actions down in the lexer rules.
           if (pendingDent && null == initialIndentToken && NEWLINE != next.getType()) { initialIndentToken = next; }
           if (null == next || HIDDEN == next.getChannel() || NEWLINE == next.getType()) { return next; }
 

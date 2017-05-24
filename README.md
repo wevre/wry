@@ -302,10 +302,10 @@ I'm thinking something similar (`$fil`) will be used to manage access to the fil
 
 To create a function, use the keyword `func` to open a new block and then write
 statements in an indented block that follows.
-
+```
      func celsiusFromFahrenheit
           return ($0-32.0)*5.0/9.0
-
+```
 Calling the function is accomplished by appending parenthesis after a name. The
 parenthesis can be empty, or they can contain array entries that will be passed in as
 arguments and available inside the function via `$arg`.
