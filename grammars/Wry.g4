@@ -14,7 +14,7 @@
 //
 //   I want to provide for composing and defining at the same time, which
 //   is what we need to mimic inheritance. So we want to do something like this:
-//        a = base_obj -> ,
+//        a = base_obj -> ()
 //        with a
 //             ...
 //   If we want to compose with a copy of the base object (so that we can't alter it via
@@ -239,6 +239,7 @@ doableBlock
      :    block
      |    doStatement
      |    forStatement
+     |    withStatement
      ;
 
 
