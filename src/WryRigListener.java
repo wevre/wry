@@ -412,7 +412,9 @@ public class WryRigListener extends WryBaseListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterAssignExpr(WryParser.AssignExprContext ctx) { }
+	@Override public void enterAssignExpr(WryParser.AssignExprContext ctx) {
+		System.out.println("entering assignExpr");
+	}
 	/**
 	 * {@inheritDoc}
 	 *
@@ -484,7 +486,9 @@ public class WryRigListener extends WryBaseListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterNameRef(WryParser.NameRefContext ctx) { }
+	@Override public void enterNameRef(WryParser.NameRefContext ctx) {
+		System.out.println("entering name ref");
+	}
 	/**
 	 * {@inheritDoc}
 	 *

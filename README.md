@@ -99,8 +99,8 @@ Arrays keys can be declared in different ways. The following are equivalent:
      age = 15
      mydata = (~name, ~age)
      mydata
-          name='mike'
-          age=15
+          name = 'mike'
+          age = 15
      mydata
           'name': 'mike'
           'age': 15
@@ -111,7 +111,8 @@ followed by a colon.
 Or one can use a bare name (no quotes) and an equals sign.
 Or one can use multiple lines and indentation to layout the structure of the array.
 A tilde preceding a bare name converts it as follows: `~name` is expanded to
-`'name': name`.
+`'name': name` where the expression on the left is a string, and the expression on the
+right will be evaluated.
 
 I was also thinking of an instance where, using indentation, if we need a non-named array
 we can use a bare comma:
@@ -150,7 +151,7 @@ trailing commas:
 
 ### Local Scope
 
-Whatever the current scope is, it's variables can be accessed via `$loc`, as follows:
+Whatever the current scope is, its variables can be accessed via `$loc`, as follows:
 
      $loc['a']['name'] = 'Fred'
      print $loc.a['name']
@@ -183,17 +184,108 @@ branching statements to conditionally add elements to the array.
      hasSurname = true
      a
           name = 'Fred
-          if hasSurname surname = "Thompson"
+          if needsSurname surname = "Thompson"
+
+We can also use the `with` statement to create a temporary scope where we may override
+values outside. I'm not sure how I want that syntax to look:
+
+	func bailout
+		...
+
+	with
+		func bailout   // Overrides the bailout function at the outer level.
+			...
+			...
+		bailout()
+
+	bailout()   // Calls the original, outer `bailout`.
+
+Maybe a "bare" `with` as above. Or maybe a `with` statement followed by an underscore. We
+should also allow for labels in case we want to be able to refer to overriden values at
+specific points in the hierarchy. (Which begs the question, how do we refer to the outermost
+$out if we are several levels deep?) (This also begs the question, why would you need/want to
+do this?)
 
 
+
+### Importing files
+
+Scripts can be split into multiple files and then included inside one another. We want to
+be able to include a file, but keep it somewhat isolated from the current scope, to avoid
+collisions. When a file is included, using the `wind` statement, it create a new level
+in the scope hierarchy. The current hierarchy is pushed, or "wound", up the stack; the
+included file is executed in its own scope, and then _that_ is wound up the stack and a
+new scope level opened for the rest of the script.
+
+This allows one, for example, to set variables prior to the `wind` statment that will affect
+the execution of the imported file, and still be available (if not overridden) to later
+parts of the script. It also allows the author to override something in the included file,
+because the override is happening at the current (lower) scope level. A wind statement can
+include a label so one can refer back to objects explicitly at that level. As with the above
+discussion on local scope, this begs the question of how we refer to a scope that has been
+pushed above a `wind` or `with` statment. Perhaps we allow for a label like this:
+
+	#script
+
+	...
+
+	wind 'include/inc-standard.wry' #standard
+
+	func bailout   // This overrides the function defined in 'inc-standard'.
+		@standard.bailout()   // Call the overridden function <- need to think about syntax,
+
+	@script.some_var
+
+The act of pushing (or winding) the scope up the stack will be triggered by a `wind` statement
+and also by EOF.
+
+Similar to the bare `with` above (and maybe, replacing it) would be a bare `wind` statement
+which would push the current scope up the stack and open up a new one. This would let you
+override something in the current scope, but still make it available if needed.
+
+	#current
+
+	myFunc = ...   // define something
+
+	wind
+
+	myFunc = ...   // will override (but not replace) the prior one
+
+	myFunc()
+
+	@current.myFunc()   // reaches back to version defined prior to `wind`
+
+Another idea is to include the labels with the wind statement itself. So `wind` looks like
+	wind [label for previous scope] [label for new scope]
+
+with some sort of syntax to distinguish between those two, or only use one or the other
+as desired.
 
 ### Loops
+
+2018-04-26: I'm thinking instead of `continue`, the keyword to loop back should be
+`repeat`, which meaning is a little more obvious.
 
 There are two loop statements, `do`, and `for`. `for` takes an array and iterates through
 the elements of the array, providing variables `$key` and `$val` to the statements inside
 the block at each iteration. The `for` statement, unlike `do`, does *NOT* need an explicit
 `continue` at the bottom. Question: should `$val` be a reference to the array element,
 instead of a copy? One could always access the original object using the `$key`.
+
+2018-04-26: With `for` loops, if they are nested, we need to distinguish between `$key`
+and `$val` at different levels. Perhaps the `for` loop needs a way to specify what variables we
+want to use, and `$key` and `$val` are the defaults if not specified.
+
+	for array_of_stuff
+		// we can use $key and $val
+
+	for array_of_stuff as index : value
+		// now we can use variables index and value.
+
+	for array_of_stuff #outer
+		for $val #inner
+			// here we can use $key and $val, but also
+			// @outer.$key and @outer.$val ????
 
 The `do` statement begins a block of code that can be repeated with a `continue` statement
 somewhere inside the block. The `do` block can also be exited with a `break` statement. If
@@ -203,12 +295,12 @@ and `then` also apply the same to a `for` block.)
 
      do
           <some stuff>
-          if <expression> continue   // skip the remaining statements and start loop over
+          if <expression> continue   // Skip the remaining statements and start loop over.
           <some stuff>
-          if <expression> break   // stop iterating and jump past the `then` block
+          if <expression> break   // Stop iterating and jump past the `then` block.
           continue
      then
-          <some stuff>   // these will only be executed if there was no `break` above
+          <some stuff>   // Will only be executed if there was no `break` above.
 
 Many loops will start with a test, similar to a standard `while` statement in C:
 
@@ -222,7 +314,7 @@ statement allows for a test at the top of the loop:
      do if <condition>
           <some stuff>
      then
-          <some stuff>   // executed even if we fail the condition, as long as no break
+          <some stuff>   // Executed even if we fail the condition, as long as no break.
 
 It's very common to have an incrementing statement right before continue, such as:
 
@@ -250,7 +342,7 @@ to that label in order to break out of nested loops.
           <some stuff>
           do #inner
                <some stuff>
-               if <expression> break #outer
+               if <expression> break #outer // Wait, syntactically speaking, do we need the octothorp?
           <some stuff>
      then
           <stuff>   // won't be called if we broke out of the #outer loop
@@ -264,8 +356,6 @@ If we do exceptions, then we will "throw" an array, and we can test the array, u
 
      try
           <some stuff>
-     then
-          <stuff>   // if no exception thrown
      catch if $exc.name == 'error'
           <stuff>
      catch if $exc.name == 'blahblahblah'
@@ -355,7 +445,7 @@ rather than composing with an object. But here we are trying to provide an examp
 object (the Person) that includes data and functions to work on that data.
 So there you go.
 
-As a corollary to this, if we have a function with the same name defined in the local
+Related to this, if we have a function with the same name defined in the local
 scope, it *won't* get called by the straightforward composition operator. We instead have
 to explicitly refer to it's containing scope (`$loc`), like so:
 
@@ -574,3 +664,126 @@ multiple compositions will just combine `$arg`s).
 
 If a non-array item is thrown into a composition, it will first be converted to an array,
 using default integer keys.
+
+### Comments
+
+Two slashes create a comment to the end of the line.
+I don't think we'll have multi-line comments like `/**/`.
+Instead, the keyword `comment` will change the line where it appears *and all indented lines below*
+into comments. This make it easy to comment out a block of code, you just prepend `comment`
+
+	comment do
+		...some stuff...
+
+The `comment` comments out the `do` and all the code belonging to the `do` block.	
+
+### Values and References
+
+Arrays exhibit reference semantics, but standard operations will produce copies of things:
+
+	a = ( name='mike', age='42' )
+	b = a
+
+The above will make a _copy_ of `a`, referred to as `b`. If you change either `a` or `b`, it
+won't affect the other.
+
+	a.name->print()   // prints 'mike'
+	b.name->print()   // prints 'mike'
+	a.name = 'tom'
+	a.name->print()   // still prints 'mike'
+	b.name->print()   // now prints 'tom'
+
+Actually in the run-time, `b` refers to `a`, but it is a read-only reference. Writing to either
+`a` or `b` will mask the original values. Here is how that works:
+
+Let `A` represent the array we created above, with keys 'name' and 'age'. Originally, variable `a`
+points to that array, so
+
+	a --> A
+
+when the runtime encounters the statement `b = a` it alters `a` by chaining with an empty array
+
+	a --> [] --> A
+
+and `b` similarly becomes
+
+	b --> [] --> A
+
+Both `b` and `a` point to `A`, but there is an empty array first in each chain. When looking up
+key `name`, the search will skip the empty array and find the value in `A` (which is how
+we achieve a read-only reference). When we write to either `b` or `a`, the assignment will
+happen at the bottom of the chain, in the empty array. Thus they share an original reference,
+but can't clobber each other with writes.
+
+How do we make a change that we know will affect the original `A`, even if shared by
+different references? We have to use chaining and tags.
+
+	b = a -> []
+
+or
+
+	b <- a
+
+2018-04-26: Hmm... I don't like this. I think for reference semantics we should have a
+different operator, like &= that makes one object refer to another. Think about it.
+
+Now if we make a change to `a`, it will be visible from `b`.
+
+	a.name = 'tom'
+	b.name->print()   // prints 'tom'
+
+Using our "pointer" diagrams, this is what happens when we execute `b <- a`:
+
+	a --> A
+	b --> [] --> A
+
+In this case, `a` still points directly to `A` with no empty array sitting in between.
+So changes through `a` are visible in `b`, which was not the case above. However, those changes
+are one-sided. If we make a change to `b` it will not affect `a`. To achieve that we need
+to use tags:
+
+	b <- a#orig
+	b@orig.name = 'tom'
+
+This is what the pointers look like:
+
+	a --> A
+	b --> [] --> A#orig
+
+Now the badge on `b` jumps over the empty array and makes changes directly in `a`.
+
+This is how we would, for example, maintain a shared counter.
+
+	counter#base
+		count = 0
+		func incrementCounter
+			$0 ?= 1
+			@base.count += $0
+
+	a <- counter
+
+	b <- counter
+
+	a->incrementCounter(1)
+
+	b->incrementCounter(5)
+
+To make this work, we have to set an explicit tag on `counter`, and reference that tag
+within the `incrementCounter` method.
+
+As part of this, I think we need to be able to use references with tags and badges. Maybe
+with parens:
+
+	counter#(theBaseName)
+
+		...   // inside the function
+		@(theBaseName).count
+
+We should be able to put tags on items as they are declared, like we did above with `counter`
+and also when composing. Those tags should not clobber each other. So maybe each chain keeps
+track of what tags have been added (meaning if we tag an item like `counter` above it will
+be automatically converted into a chain with the tag) and then when composed later with other
+things, those chains will have slots for additional tags.
+
+Do we need to distinguish between chains formed by the runtime (for example, for copy-on-write and
+tagged objects as described above) and those formed explicitly by the user? Or does it matter?

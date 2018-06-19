@@ -1,15 +1,10 @@
 /*
-* Wry.g4
-*
-* ANTLR4 grammar for wry.
-*
-* Author: Mike Weaver
-* Created: 2017-03-15
-*
-*/
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
 
-
-grammar Wry;
+lexer grammar DentLexer;
 
 tokens { INDENT, DEDENT }
 
@@ -77,22 +72,9 @@ tokens { INDENT, DEDENT }
 
 }
 
-script : ( NEWLINE | statement )* EOF ;
-
-statement
-	:	simpleStatement
-	|	blockStatements
-	;
-
-simpleStatement : LEGIT+ NEWLINE ;
-
-blockStatements : LEGIT+ NEWLINE INDENT statement+ DEDENT ;
-
 NEWLINE : ( '\r'? '\n' | '\r' ) { if (pendingDent) { setChannel(HIDDEN); } pendingDent = true; indentCount = 0; initialIndentToken = null; } ;
 
 WS : [ \t]+ { setChannel(HIDDEN); if (pendingDent) { indentCount += getText().length(); } } ;
 
 BlockComment : '/*' ( BlockComment | . )*? '*/' -> channel(HIDDEN) ;   // allow nesting comments
 LineComment : '//' ~[\r\n]* -> channel(HIDDEN) ;
-
-LEGIT : ~[ \t\r\n]+ ~[\r\n]*;   // Replace with your language-specific rules...

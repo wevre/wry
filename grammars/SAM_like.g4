@@ -1,15 +1,10 @@
 /*
-* Wry.g4
-*
-* ANTLR4 grammar for wry.
-*
-* Author: Mike Weaver
-* Created: 2017-03-15
-*
-*/
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
 
-
-grammar Wry;
+grammar SAM_like;
 
 tokens { INDENT, DEDENT }
 
@@ -77,16 +72,27 @@ tokens { INDENT, DEDENT }
 
 }
 
-script : ( NEWLINE | statement )* EOF ;
+script : ( NEWLINE | structure )* EOF ;
 
-statement
-	:	simpleStatement
-	|	blockStatements
+structure
+	:	field
+	|	namedBlock
+	|	paragraph
 	;
 
-simpleStatement : LEGIT+ NEWLINE ;
+field : NAME attributeDeclare? COLON text NEWLINE ;
+	   
+namedBlock : NAME attributeDeclare? NEWLINE INDENT structure+ DEDENT ;
 
-blockStatements : LEGIT+ NEWLINE INDENT statement+ DEDENT ;
+paragraph : line* NEWLINE ;
+
+line : text NEWLINE ;
+			
+text : . ;
+
+attributeDeclare : LANG text RANG ;
+
+NAME : [a-zA-Z_]+ [a-zA-Z_0-9]* ;
 
 NEWLINE : ( '\r'? '\n' | '\r' ) { if (pendingDent) { setChannel(HIDDEN); } pendingDent = true; indentCount = 0; initialIndentToken = null; } ;
 
@@ -95,4 +101,10 @@ WS : [ \t]+ { setChannel(HIDDEN); if (pendingDent) { indentCount += getText().le
 BlockComment : '/*' ( BlockComment | . )*? '*/' -> channel(HIDDEN) ;   // allow nesting comments
 LineComment : '//' ~[\r\n]* -> channel(HIDDEN) ;
 
+COLON : ':' ;
+
+LANG : '<' ;
+RANG : '>' ;
+
 LEGIT : ~[ \t\r\n]+ ~[\r\n]*;   // Replace with your language-specific rules...
+
