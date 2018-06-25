@@ -5,125 +5,140 @@ A scripting language for web authoring.
 
 
 
-Grammar
------------
+section : Grammar
 
-See [wry grammar](grammars/Wry.g4).
+   See [wry grammar](grammars/Wry.g4).
 
+section : Types
 
+   There are (at least) seven types: `Integer`, `Float`, `Bool`, `String`,
+   `Null`, `Array`, and `Function`. The `Array` type replaces what would be
+   arrays, dictionaries, class instances, and parameter lists in other
+   languages. It is an ordered map and behaves similarly to PHP's array type.
 
-Types
------------
+   The simple types (`Integer`, `Float`, `Bool`, `String`, `Null`) will be
+   familiar to users of other languages, and can be created with literals that
+   are obvious.
 
-There are (at least) seven types: `Integer`, `Float`, `Bool`, `String`, `Null`, `Array`,
-and `Function`. The `Array` type replaces what would be arrays, dictionaries, class
-instances, and parameter lists in other languages. It is an ordered map and behaves
-similarly to PHP's array type.
+   ```
+      count = 7
+      radius = 13.6
+      isChecked = false
+      employee = "John Smith"
+      flag = null
 
-The simple types (`Integer`, `Float`, `Bool`, `String`, `Null`) will be familiar to users
-of other languages, and can be created with literals that are obvious.
-
-     count = 7
-     radius = 13.6
-     isChecked = false
-     employee = "John Smith"
-     flag = null
-
-Those 5 simple types are scalars, whereas the `Array` type is a compound object.
-
+      Those 5 simple types are scalars, whereas the `Array` type is a compound
+      object.
 
 
-### Arrays
 
-Arrays are an ordered hashmap. That means it preserves the order of the keys as items are
-inserted into the array. (Implementing it means something like a hashmap combined with
-a linked list.)
+section : Arrays
 
-To create an array, separate array elements with commas. A trailing comma is allowed, and
-in fact is often useful to coerce something to an array.
-An array can be a simple list of other types (no keys), in which case incrementing integer
-keys will automatically be applied. Or it can be more like a dictionary with keys and
-values, separate by colons and commas.
-Keys are of type `String` or `Int`, or expressions that evaluate to one of these.
-Entries in the array can be retrieved by key.
+   Arrays are an ordered hashmap. That means it preserves the order of the keys
+   as items are inserted into the array. (Implementing it means something like a
+   hashmap combined with a linked list.)
 
-     employee = ('first': 'mike', 'last': 'weaver', 'empl-id': 1234, 10.5)
+   To create an array, separate array elements with commas. A trailing comma is
+   allowed, and in fact is often useful to coerce something to an array. An
+   array can be a simple list of other types (no keys), in which case
+   incrementing integer keys will automatically be applied. Or it can be more
+   like a dictionary with keys and values, separate by colons and commas. Keys
+   are of type `String` or `Int`, or expressions that evaluate to one of these.
+   Entries in the array can be retrieved by key.
 
-This syntax is similar to creating a dictionary in other languages, say JSON.
-The parenthesis are needed because of operator precedence. Without them `employee` would
-be the first item in a much different array, instead of being the name to which the array
-is assigned.
+   ```
+      employee = ('first': 'mike', 'last': 'weaver', 'empl-id': 1234, 10.5)
 
-An `Array` of items without keys is declared in a similar way:
+   This syntax is similar to creating a dictionary in other languages, say JSON.
+   The parenthesis are needed because of operator precedence. Without them
+   `employee` would be the first item in a much different array, instead of
+   being the name to which the array is assigned.
 
-     cutoffs = (15.0, 25.0, 47.0)
+   !!!
+      Or it might be a syntax error. Without parenthesis the statement would be
+      interpreted as
 
-The items in the array are accessed with a subscript operator that uses square brackets.
-Inside the brackets use an expression that evaluates to either an `Int` or `String` that
-represents the key.
+      ```
+         (employee = 'first') : 'mike', ...
 
-     cutoffs[0] // 15.0
-     employee['first'] // 'mike'
-     key = 'first'
-     employee[key] // 'mike'
+   Which would be a syntax error. The first term in parenthesis is an assignment
+   which doesn't return a value so can't be used as a key in an array.
 
-An alternate way to retrieve keyed items in the array uses a dot syntax. In this case, the
-key for the item must be a string that is also a valid name.
+   An `Array` of items without keys is declared in a similar way:
 
-     employee.first // equivalent to employee['first']
+   ```
+      cutoffs = (15.0, 25.0, 47.0)
 
-[MAYBE:]
+   The items in the array are accessed with a subscript operator that uses
+   square brackets. Inside the brackets use an expression that evaluates to
+   either an `Int` or `String` that represents the key.
 
-Multiple items can be accessed using multiple items in the subscript, separated by commas.
-Expressions that resolve to other than String or Integer will emit a warning.
+   ```
+      cutoffs[0] // 15.0
+      employee['first'] // 'mike'
+      key = 'first'
+      employee[key] // 'mike'
 
-     cutoffs[0, 2] //  0 and 1
-     employee['first', 'empl-id']
+   An alternate way to retrieve keyed items in the array uses a dot syntax. In
+   this case, the key for the item must be a string that is also a valid name.
 
-The two expressions above, instead of returning a single item from the original array,
-will each return an array with two items.
-Integer indices in the returned array will be reset to 0, but string keys will be
-preserved from the original.
-(... or, why not preserve integer indices? we can always have a method to "reset" array
-indices if that is desirable.)
+   ```
+      employee.first // equivalent to employee['first']
 
-[:MAYBE]
+   !!! Experimental subscripts
 
-Alternate array declaration syntax:
+      Multiple items can be accessed using multiple items in the subscript,
+      separated by commas. Expressions that resolve to other than String or
+      Integer will emit a warning.
 
-Arrays keys can be declared in different ways. The following are equivalent:
+      ```
+         cutoffs[0, 2] //  0 and 1
+         employee['first', 'empl-id']
 
-     mydata = ('name': 'mike', 'age': 15)
-     mydata = (name='mike', age=15)
-     name = 'mike'
-     age = 15
-     mydata = (~name, ~age)
-     mydata
-          name = 'mike'
-          age = 15
-     mydata
-          'name': 'mike'
-          'age': 15
-     'mydata': ('name': 'mike', 'age': 15)
+      The two expressions above, instead of returning a single item from the
+      original array, will each return an array with two items. Integer indices
+      in the returned array will be reset to 0, but string keys will be
+      preserved from the original. (... or, why not preserve integer indices? we
+      can always have a method to "reset" array indices if that is desirable.)
 
-So when declaring keys, one can use a string, or an expression that evaluates to a string,
-followed by a colon.
-Or one can use a bare name (no quotes) and an equals sign.
-Or one can use multiple lines and indentation to layout the structure of the array.
-A tilde preceding a bare name converts it as follows: `~name` is expanded to
-`'name': name` where the expression on the left is a string, and the expression on the
-right will be evaluated.
+   Arrays keys can be declared in different ways. The following are equivalent:
 
-I was also thinking of an instance where, using indentation, if we need a non-named array
-we can use a bare comma:
+   ```
+      mydata = ('name': 'mike', 'age': 15)
+      mydata = (name='mike', age=15)
+      name = 'mike'
+      age = 15
+      mydata = (~name, ~age)
+      mydata
+         name = 'mike'
+         age = 15
+      mydata
+         'name': 'mike'
+         'age': 15
+      'mydata': ('name': 'mike', 'age': 15)
 
-     people
-          ,   // The other thing I was thinking here is to use empty brackets: []
-               'name': 'mike'
-               'age': 42
-          ,   // Another option might be to use a bare underscore: _
-               'name': 'fred'
-               'age': 34
+   So when declaring keys, one can use a string, or an expression that evaluates
+   to a string, followed by a colon. Or one can use a bare name (no quotes) and
+   an equals sign. Or one can use multiple lines and indentation to layout the
+   structure of the array. A tilde preceding a bare name converts it as follows:
+   `~name` is expanded to `'name': name` where the expression on the left is a
+   string, and the expression on the right will be evaluated.
+
+   I was also thinking of an instance where, using indentation, if we need a
+   non-named array we can use a bare comma:
+
+   ```
+      people
+         ,   # Or maybe empty brackets `[]`, or empty parens `()`
+            'name': 'mike'
+            'age': 42
+         ,   # Another option might be to use a bare underscore: _
+            'name': 'fred'
+            'age': 34
+
+   !!!
+      I'm liking empty parens as representative of an empty array. Also use to
+      initialize an empty array.
 
 A bare expression (something that is not part of an assignment statement) will act as an
 assignment into the local scope, using the next integer key.
@@ -212,34 +227,34 @@ do this?)
 
 Scripts can be split into multiple files and then included inside one another. We want to
 be able to include a file, but keep it somewhat isolated from the current scope, to avoid
-collisions. When a file is included, using the `wind` statement, it create a new level
+collisions. When a file is included, using the `wend` statement, it create a new level
 in the scope hierarchy. The current hierarchy is pushed, or "wound", up the stack; the
 included file is executed in its own scope, and then _that_ is wound up the stack and a
 new scope level opened for the rest of the script.
 
-This allows one, for example, to set variables prior to the `wind` statment that will affect
+This allows one, for example, to set variables prior to the `wend` statement that will affect
 the execution of the imported file, and still be available (if not overridden) to later
 parts of the script. It also allows the author to override something in the included file,
-because the override is happening at the current (lower) scope level. A wind statement can
+because the override is happening at the current (lower) scope level. A `wend` statement can
 include a label so one can refer back to objects explicitly at that level. As with the above
 discussion on local scope, this begs the question of how we refer to a scope that has been
-pushed above a `wind` or `with` statment. Perhaps we allow for a label like this:
+pushed above a `wend` or `with` statement. Perhaps we allow for a label like this:
 
 	#script
 
 	...
 
-	wind 'include/inc-standard.wry' #standard
+	wend 'include/inc-standard.wry' #standard
 
 	func bailout   // This overrides the function defined in 'inc-standard'.
 		@standard.bailout()   // Call the overridden function <- need to think about syntax,
 
 	@script.some_var
 
-The act of pushing (or winding) the scope up the stack will be triggered by a `wind` statement
+The act of pushing the scope up the stack will be triggered by a `wend` statement
 and also by EOF.
 
-Similar to the bare `with` above (and maybe, replacing it) would be a bare `wind` statement
+Similar to the bare `with` above (and maybe, replacing it) would be a bare `wend` statement
 which would push the current scope up the stack and open up a new one. This would let you
 override something in the current scope, but still make it available if needed.
 
@@ -247,45 +262,52 @@ override something in the current scope, but still make it available if needed.
 
 	myFunc = ...   // define something
 
-	wind
+	wend #next
 
 	myFunc = ...   // will override (but not replace) the prior one
 
 	myFunc()
 
-	@current.myFunc()   // reaches back to version defined prior to `wind`
+	@current.myFunc()   // reaches back to version defined prior to `wend`
 
-Another idea is to include the labels with the wind statement itself. So `wind` looks like
-	wind [label for previous scope] [label for new scope]
+section : Loops
 
-with some sort of syntax to distinguish between those two, or only use one or the other
-as desired.
+   !!!
+      2018-04-26: I'm thinking instead of `continue`, the keyword to loop back
+      should be `repeat`, which meaning is a little more obvious.
 
-### Loops
+   There are two loop statements, `do`, and `for`. `for` takes an array and
+   iterates through the elements of the array, providing variables `key` and
+   `val` to the statements inside the block at each iteration. The `for`
+   statement, unlike `do`, does *NOT* need an explicit `continue` at the bottom.
 
-2018-04-26: I'm thinking instead of `continue`, the keyword to loop back should be
-`repeat`, which meaning is a little more obvious.
+   !!!
+      Question: should `val` be a reference to the array element, instead of a
+      copy? One could always access the original object using the `key`.
 
-There are two loop statements, `do`, and `for`. `for` takes an array and iterates through
-the elements of the array, providing variables `$key` and `$val` to the statements inside
-the block at each iteration. The `for` statement, unlike `do`, does *NOT* need an explicit
-`continue` at the bottom. Question: should `$val` be a reference to the array element,
-instead of a copy? One could always access the original object using the `$key`.
+   !!!
+      2018-04-26: With `for` loops, if they are nested, we need to distinguish
+      between `key` and `val` at different levels. Perhaps the `for` loop needs
+      a way to specify what variables we want to use, and `key` and `val` are
+      the defaults if not specified.
 
-2018-04-26: With `for` loops, if they are nested, we need to distinguish between `$key`
-and `$val` at different levels. Perhaps the `for` loop needs a way to specify what variables we
-want to use, and `$key` and `$val` are the defaults if not specified.
+   ```
+      for array_of_stuff
+         // we can use key and val
 
-	for array_of_stuff
-		// we can use $key and $val
+      for array_of_stuff use index=value
+         // now we can use variables index and value.
 
-	for array_of_stuff as index : value
-		// now we can use variables index and value.
+   for array_of_stuff #outer
+      for val #inner
+         // here we can use key and val, but also
+         // @outer.key and @outer.val ????
 
-	for array_of_stuff #outer
-		for $val #inner
-			// here we can use $key and $val, but also
-			// @outer.$key and @outer.$val ????
+   !!!
+      I like that last one, it uses labels and hints at the notion of nested
+      scopes, so does that mean there is some sort of implicit wend going on
+      with the loops? It also has cleaner syntax, because we don't have to
+      introduce a new keyword `as` or `using` or something.
 
 The `do` statement begins a block of code that can be repeated with a `continue` statement
 somewhere inside the block. The `do` block can also be exited with a `break` statement. If
@@ -342,10 +364,15 @@ to that label in order to break out of nested loops.
           <some stuff>
           do #inner
                <some stuff>
-               if <expression> break #outer // Wait, syntactically speaking, do we need the octothorp?
+               if <expression> break @outer
           <some stuff>
      then
           <stuff>   // won't be called if we broke out of the #outer loop
+
+!!!
+   Do we use the octothorpe on the break statement? Or would it be more appropriate
+   to use the ampersand? Or do we need any punctuation at all? We probably don't
+   _need_ punctuation, but it is probably useful as a visual marker.
 
 The label always comes at the end of the line, so `do-if` has its test expression first,
 then the label. And `continue` could have an optional incrementing statement first, then
@@ -446,7 +473,7 @@ object (the Person) that includes data and functions to work on that data.
 So there you go.
 
 Related to this, if we have a function with the same name defined in the local
-scope, it *won't* get called by the straightforward composition operator. We instead have
+scope, it _won't_ get called by the straightforward composition operator. We instead have
 to explicitly refer to it's containing scope (`$loc`), like so:
 
      p->$loc.fullName()
@@ -460,7 +487,7 @@ Internally, the function refers to the arguments with an automatic variable `$ar
           return t
 
 The `for` block operates on an array in a loop, and at each iteration provides variables
-`$key` and `$val` for the current entry.
+`key` and `val` for the current entry.
 
      total = sum(1, 2, 3, 4) // returns 10
 
@@ -675,115 +702,155 @@ into comments. This make it easy to comment out a block of code, you just prepen
 	comment do
 		...some stuff...
 
-The `comment` comments out the `do` and all the code belonging to the `do` block.	
+The `comment` comments out the `do` and all the code belonging to the `do` block.
 
-### Values and References
+section : Values and references
 
-Arrays exhibit reference semantics, but standard operations will produce copies of things:
+   Arrays exhibit reference semantics, but standard operations will produce
+   copies of things:
 
-	a = ( name='mike', age='42' )
-	b = a
+   ```
+      a = ( name='mike', age='42' )
+      b = a
 
-The above will make a _copy_ of `a`, referred to as `b`. If you change either `a` or `b`, it
-won't affect the other.
+   The above will make a _copy_ of `a`, referred to as `b`. If you change either
+   `a` or `b`, it won't affect the other.
 
-	a.name->print()   // prints 'mike'
-	b.name->print()   // prints 'mike'
-	a.name = 'tom'
-	a.name->print()   // still prints 'mike'
-	b.name->print()   // now prints 'tom'
+   ```
+      a.name->print()   // prints 'mike'
+      b.name->print()   // prints 'mike'
+      a.name = 'tom'
+      a.name->print()   // still prints 'mike'
+      b.name->print()   // now prints 'tom'
 
-Actually in the run-time, `b` refers to `a`, but it is a read-only reference. Writing to either
-`a` or `b` will mask the original values. Here is how that works:
+   Actually in the run-time, `b` refers to `a`, but it is a read-only reference.
+   Writing to either `a` or `b` will mask the original values. Here is how that
+   works:
 
-Let `A` represent the array we created above, with keys 'name' and 'age'. Originally, variable `a`
-points to that array, so
+   Let `A` represent the array we created above, with keys 'name' and 'age'.
+   Originally, variable `a` points to that array, so
 
-	a --> A
+   ```(txt)
+      a --> A
 
-when the runtime encounters the statement `b = a` it alters `a` by chaining with an empty array
+   when the runtime encounters the statement `b = a` it alters `a` by chaining
+   with an empty array
 
-	a --> [] --> A
+   ```(txt)
+      a --> [] --> A
 
-and `b` similarly becomes
+   and `b` similarly becomes
 
-	b --> [] --> A
+   ```(txt)
+      b --> [] --> A
 
-Both `b` and `a` point to `A`, but there is an empty array first in each chain. When looking up
-key `name`, the search will skip the empty array and find the value in `A` (which is how
-we achieve a read-only reference). When we write to either `b` or `a`, the assignment will
-happen at the bottom of the chain, in the empty array. Thus they share an original reference,
-but can't clobber each other with writes.
+   Both `b` and `a` point to `A`, but there is an empty array first in each
+   chain. When looking up key `name`, the search will skip the empty array and
+   find the value in `A` (which is how we achieve a read-only reference). When
+   we write to either `b` or `a`, the assignment will happen at the bottom of
+   the chain, in the empty array. Thus they share an original reference, but
+   can't clobber each other with writes.
 
-How do we make a change that we know will affect the original `A`, even if shared by
-different references? We have to use chaining and tags.
+   How do we make a change that we know will affect the original `A`, even if
+   shared by different references? We have to use chaining and tags.
 
-	b = a -> []
+   ```(txt)
+      b = a -> []
 
-or
+   or
 
-	b <- a
+   ```(txt)
+      b <- a
 
-2018-04-26: Hmm... I don't like this. I think for reference semantics we should have a
-different operator, like &= that makes one object refer to another. Think about it.
+   !!!
+      2018-04-26: Hmm... I don't like this. I think for reference semantics we
+      should have a different operator, like &= that makes one object refer to
+      another. Think about it.
 
-Now if we make a change to `a`, it will be visible from `b`.
+   Now if we make a change to `a`, it will be visible from `b`.
 
-	a.name = 'tom'
-	b.name->print()   // prints 'tom'
+   ```
+      a.name = 'tom'
+      b.name->print()   // prints 'tom'
 
-Using our "pointer" diagrams, this is what happens when we execute `b <- a`:
+   Using our "pointer" diagrams, this is what happens when we execute `b <- a`:
 
-	a --> A
-	b --> [] --> A
+   ```
+      a --> A
+      b --> [] --> A
 
-In this case, `a` still points directly to `A` with no empty array sitting in between.
-So changes through `a` are visible in `b`, which was not the case above. However, those changes
-are one-sided. If we make a change to `b` it will not affect `a`. To achieve that we need
-to use tags:
+   In this case, `a` still points directly to `A` with no empty array sitting in
+   between. So changes through `a` are visible in `b`, which was not the case
+   above. However, those changes are one-sided. If we make a change to `b` it
+   will not affect `a`. To achieve that we need to use tags:
 
-	b <- a#orig
-	b@orig.name = 'tom'
+   ```
+      b <- a#orig
+      b@orig.name = 'tom'
 
-This is what the pointers look like:
+      This is what the pointers look like:
 
-	a --> A
-	b --> [] --> A#orig
+   ```
+      a --> A
+      b --> [] --> A#orig
 
-Now the badge on `b` jumps over the empty array and makes changes directly in `a`.
+   Now the badge on `b` jumps over the empty array and makes changes directly in
+   `a`.
 
-This is how we would, for example, maintain a shared counter.
+   This is how we would, for example, maintain a shared counter.
 
-	counter#base
-		count = 0
-		func incrementCounter
-			$0 ?= 1
-			@base.count += $0
+   ```
+      counter #base
+         count = 0
+         func incrementCounter
+            $0 ?= 1
+            @base.count += $0
 
-	a <- counter
+      a <- counter
+      b <- counter
+      a->incrementCounter(1)
+      b->incrementCounter(5)
 
-	b <- counter
+   To make this work, we have to set an explicit tag on `counter`, and reference
+   that tag within the `incrementCounter` method.
 
-	a->incrementCounter(1)
+   As part of this, I think we need to be able to use references with tags and
+   badges. Maybe with parens:
 
-	b->incrementCounter(5)
+   ```
+      counter#(theBaseName)
 
-To make this work, we have to set an explicit tag on `counter`, and reference that tag
-within the `incrementCounter` method.
+      ...   # inside the function
+      @(theBaseName).count
 
-As part of this, I think we need to be able to use references with tags and badges. Maybe
-with parens:
+   !!!
+      Actually, I'm thinking it should be wrapped in colons, which hints back at
+      the way of declaring arrays with evaluated keys.
+      ```
+         my_array = ( <some expression> : <some value>)
 
-	counter#(theBaseName)
+      Here, because of the colon, `some expression` can be a variable or an
+      expression or what have you, something you can't do if you use an equal
+      sign.
 
-		...   // inside the function
-		@(theBaseName).count
+      Similarly, we could evaluate an expression to determine the tag/badge by
+      wrapping it in colons:
 
-We should be able to put tags on items as they are declared, like we did above with `counter`
-and also when composing. Those tags should not clobber each other. So maybe each chain keeps
-track of what tags have been added (meaning if we tag an item like `counter` above it will
-be automatically converted into a chain with the tag) and then when composed later with other
-things, those chains will have slots for additional tags.
+      ```
+         counter #:<some expression>:
 
-Do we need to distinguish between chains formed by the runtime (for example, for copy-on-write and
-tagged objects as described above) and those formed explicitly by the user? Or does it matter?
+         @:<some expression>:->count()
+
+      It's maybe not as visible as the parens, but syntax highlighting could
+      help with that.
+
+   We should be able to put tags on items as they are declared, like we did
+   above with `counter` and also when composing. Those tags should not clobber
+   each other. So maybe each chain keeps track of what tags have been added
+   (meaning if we tag an item like `counter` above it will be automatically
+   converted into a chain with the tag) and then when composed later with other
+   things, those chains will have slots for additional tags.
+
+   Do we need to distinguish between chains formed by the runtime (for example,
+   for copy-on-write and tagged objects as described above) and those formed
+   explicitly by the user? Or does it matter?
