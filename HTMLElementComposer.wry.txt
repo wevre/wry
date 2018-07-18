@@ -1,320 +1,325 @@
 project : HTML Element Composer
-   author : Mike Weaver
-   created : 2018-06-13
-   copyright : © 2018 All rights reserved.
-   license : See [*License].
+	author : Mike Weaver
+	created : 2018-06-13
+	copyright : © 2018 All rights reserved.
+	license : See [*License].
 
 section : Introduction
 
-   An HTML document is built using HTML elements. Elements include start and end
-   tags, attributes and content. Content can be text or child elements, nested
-   to arbitrary levels. See {W3C HTML syntax}[*elem-url].
+	An HTML document is built using HTML elements. Elements include start and end
+	tags, attributes and content. Content can be text or child elements, nested
+	to arbitrary levels. See {W3C HTML syntax}[*elem-url].
 
-   elem-url : https://www.w3.org/TR/html5/syntax.html
+	elem-url : https://www.w3.org/TR/html5/syntax.html
 
-   HTMLElementComposer, or Composer for short, is an object to help compose
-   proper HTML. Composer keeps track of nested elements. It can indent the
-   output for easier reading or debugging by humans. For some quick examples,
-   see the [*Tests] section.
+	HTMLElementComposer, or Composer for short, is an object to help compose
+	proper HTML. Composer keeps track of nested elements. It can indent the
+	output for easier reading or debugging by humans. For some quick examples,
+	see the [*Tests] section.
 
-   Composer deals with HTML at a low level: tags, attributes, and content. It is
-   designed such that other objects can inherit and provide more specific
-   functionality. For example, a FormBuilder object could use Composer to deal
-   with low-level HTML details, and provide a higher level API for `addButton`,
-   `addInputField`, etc.
+	Composer deals with HTML at a low level: tags, attributes, and content. It is
+	designed such that other objects can inherit and provide more specific
+	functionality. For example, a FormBuilder object could use Composer to deal
+	with low-level HTML details, and provide a higher level API for `addButton`,
+	`addInputField`, etc.
 
 section : Creating an element
 
-   The core work of Composer is creating elements. The `getElement` function
-   below takes an element name, attributes, and content and returns a string of
-   the composed HTML element. Attributes and content are optional. By default, a
-   closing tag is not generated and elements are left open in anticipation of
-   subsequent content. Pass `close=true` to change that behavior and close the
-   element with an end tag. Note that {void elements}[*Void elements] take no
-   content and are always closed with ' \>' regardless of the flag.
+	The core work of Composer is creating elements. The `getElement` function
+	below takes an element name, attributes, and content and returns a string of
+	the composed HTML element. Attributes and content are optional. By default, a
+	closing tag is not generated and elements are left open in anticipation of
+	subsequent content. Pass `close=true` to change that behavior and close the
+	element with an end tag. Note that {void elements}[*Void elements] take no
+	content and are always closed with ' \>' regardless of the flag.
 
-   The arguments to `getElement` should be valid HTML but the function does not
-   enforce that. It transforms the keys and values in the `attribs` argument
-   into HTML attributes, wrapping the values in double quotes. Those values
-   should not themselves contain unescaped double quotes. The `content` argument
-   will be composed untouched as the HTML element content.
+	The arguments to `getElement` should be valid HTML but the function does not
+	enforce that. It transforms the keys and values in the `attribs` argument
+	into HTML attributes, wrapping the values in double quotes. Those values
+	should not themselves contain unescaped double quotes. The `content` argument
+	will be composed untouched as the HTML element content.
 
-   `getElement` is a true function. It does not change any state or store any
-   output, it simply returns a string of HTML. Notably, it does not keep track
-   of previously opened elements and thus has no mechanism to close them. All of
-   that will be handled with the next batch of functions.
+	`getElement` is a true function. It does not change any state or store any
+	output, it simply returns a string of HTML. Notably, it does not keep track
+	of previously opened elements and thus has no mechanism to close them. All of
+	that will be handled with the next batch of functions.
 
-   >>> Element functions
+	>>> Element functions
 
-func getElement   #([elem], attribs=(), content='', close=false)
-   elem ?= $arg[0]
-   guard elem
-      return
-   attribs ?= ()
-   content ?= ''
-   close ?= false
-   '<' + elem
-   if attribs
-      ' ' + attribs->map({ return key+'="'+val+'"' })->concat(' ')
-   if isEmptyElement(elem)   # See [*Note 1]
-      ' />'
-   else
-      '>'
-      content
-      if close
-         '</' + elem + '>'
-   return $loc->filter({ return isNumeric(key) })->concat()   # See [*Note 2]
+func getElement   # ([elem], attribs=(), content='', close=false)
+	$arg.elem ?= $arg[0]
+	guard elem
+		return
+	'<' + elem
+	for attribs
+		' ' + key + '="' + val + '"'
+	if isEmptyElement(elem)   # See [*Note static]
+		' />'
+	else
+		'>'
+		content
+		if close
+			'</' + elem + '>'
+	return $loc->concat()   # See [*Note loc concat]
 
-test   #`getElement` function
-   getElement('img', attribs=(src='/logo')) == '<img src="/logo" />'
-   getElement('p', attribs=(class='g'), content='Hello world!', close=true) \
-      == '<p class="g">Hello world!</p>'
-   getElement('div', attribs=(class='a', id='23')) == '<div class="a" id="23">'
+	<<<
 
-   <<<
+	!!!
+		I'm using # throughout this document to create a comment, but I also had
+		notes to use that as a badge for marking scopes. Maybe comments need to be
+		marked with something else, like `//`.
 
-   !!!
-      How will those tests above for `getElement` work? They are declared
-      alongside the function, but the function itself is declared inside
-      `HTMLElementComposer`. Will the test system run tests like those inside
-      their declared context?
+	note : Note static
+		Functions `getElement` and `isEmptyElement` operate somewhat like "static"
+		methods, in that they don't technically need an object context and don't
+		change any state. They will be called, however, by the other methods of
+		HTMLElementComposer and so will automatically inherit an object scope.
+		That is needed, by the way, in for `getElement` to call `isEmptyElement`.
 
-   note : Note 1
-      Functions `getElement` and `isEmptyElement` will probably not be called
-      with an explicit object context, but that is okay, because they don't
-      change any state. The context that exists when they are called will
-      contain these functions, so they will resolve.
+	note : Note loc concat
+		The `getElement` function, as with the `getIndent` function below, builds
+		up its return value by adding expressions to the local context. This can
+		get tricky if the code includes setting variables, which would then also
+		be in the local context and included in the final concat. To avoid this,
+		we set values in a different context (typically $arg) so that local
+		contains only our desired results expressions.
 
-   note : Note 2
-      The `getElement` function, as with the `getIndent` function below, builds
-      up its return value by adding expressions to the local context, which will
-      be assigned incrementing integer keys. The local variables will be in that
-      same context, with string keys. To return the result, the function
-      concatenates values of the local context, skipping any non-integer keys.
+	The next set of functions comprise the main API of Composer. They use
+	`getElement` defined above to generate output, which is stored internally;
+	and they manage nested elements, which are tracked in an internal stack.
+	These functions are:
 
-   The next set of functions comprise the main API of Composer. They use
-   `getElement` defined above to generate output, which is stored internally;
-   and they manage nested elements, which are tracked in an internal stack.
-   These functions are:
+	* `beginElement`
+	* `endElement`
+	* `addElement`
+	* `addCustom`
+	* `getHTML`
 
-   * `beginElement`
-   * `endElement`
-   * `addElement`
-   * `addCustom`
-   * `getHTML`
+	Open an element with a call to `beginElement` and close it with a matching
+	call to `endElement`. For an element that doesn't (or can't) take children,
+	add the entire element, including start and end tag, with a call to
+	`addElement`. Add arbitrary HTML by calling `addCustom`. All these calls
+	accumulate output in an internal store. Retrieve the final HTML, and reset
+	the internal store, with a call to `getHTML`.
 
-   Open an element with a call to `beginElement` and close it with a matching
-   call to `endElement`. For an element that doesn't (or can't) take children,
-   add the entire element, including start and end tag, with a call to
-   `addElement`. Add arbitrary HTML by calling `addCustom`. All these calls
-   accumulate output in an internal store. Retrieve the final HTML, and reset
-   the internal store, with a call to `getHTML`.
+	It is common to have 'class' as the only attribute on an HTML element. Rather
+	than embed a 'class' key-value pair as the only item in the `attribs` array,
+	it can be passed on its own with the `class` parameter to `beginElement` and
+	`addElement`. This cleans up the call site for a common scenario. The
+	following two lines are equivalent.
 
-   It is common to have 'class' as the only attribute on an HTML element. Rather
-   than embed a 'class' key-value pair as the only item in the `attribs` array,
-   it can be passed on its own with the `class` parameter to `beginElement` and
-   `addElement`. This cleans up the call site for a common scenario. The
-   following two lines are equivalent.
+	```
+		composer->addElement('p', attribs=(class='greet'), content='Hello World!')
+		composer->addElement('p', class='greet', content='Hello World!')
 
-   ```
-      composer->addElement('p', attribs=(class='greet'), content='Hello World!')
-      composer->addElement('p', class='greet', content='Hello World!')
+	Note the functions below have placeholders for handling indentation, which
+	will be dealt with later in this document.
 
-   Note the functions below have placeholders for handling indentation, which
-   will be dealt with later in this document.
+	>>> Element functions
 
-   >>> Element functions
-
-func beginElement   #([elem], attribs=(), content='', class=nil)
-   elem ?= $arg[0]
-   guard elem
-      return
-   if isEmptyElement(elem) with
-      '`beginElement` called with void element '
-      '"' + elem + '". '
-      'Use `addElement` instead.'
-      throw (msg=$loc->concat())
-   attribs ?= ()
-   content ?= ''
-   if class
-      attribs['class'] = class
-   tagStack->push(elem)
-   <*Handle indentation>
-   store[] = getElement(elem, ~attribs, ~content)
+func beginElement   # ([elem], attribs=(), content='', class=nil)
+	$arg.elem ?= $arg[0]
+	guard elem
+		return
+	if isEmptyElement(elem) with
+		'`beginElement` called with void element '
+		'"' + elem + '". '
+		'Use `addElement` instead.'
+		throw (msg=$loc->concat())
+	if class
+		attribs['class'] = class
+	tagStack->push(elem)   # See [*Note writing variables]
+	<*Handle indentation>
+	store[] = getElement(elem, ~attribs, ~content)
 
 func endElement
-   elem = tagStack->pop()
-   guard elem
-      throw (msg='Too many calls to endElement')
-   <*Handle indentation>
-   store[] = '</' + elem + '>'
+	elem = tagStack->pop()
+	guard elem
+		throw (msg='Too many calls to endElement')
+	<*Handle indentation>
+	store[] = '</' + elem + '>'
 
-func addElement   #([elem], attribs=(), content='', class=nil)
-   elem ?= $arg[0]
-   guard elem
-      return
-   atttribs ?= ()
-   content ?= ''
-   if class
-      attribs['class'] = class
-   <*Handle indentation>
-   store[] = getElement(elem, ~attribs, ~content, close: true)
+func addElement   # ([elem], attribs=(), content='', class=nil)
+	$arg.elem ?= $arg[0]
+	guard elem
+		return
+	if class
+		attribs['class'] = class
+	<*Handle indentation>
+	store[] = getElement(elem, ~attribs, ~content, close: true)
 
 func addCustom   #([string])
-   string ?= $arg[0]
-   store[] = string
+	$arg.string ?= $arg[0]
+	store[] = string
 
-func getHTML   #(reset=true)
-   guard tagStack->isEmtpy()
-      throw (msg='There are unclosed elements')
-   reset ?= true
-   defer if reset
-      $obj.store = ()
-   return store->concat()
+func getHTML   # (reset=true)
+	guard tagStack->isEmtpy()
+		throw (msg='There are unclosed elements')
+	reset ?= true
+	defer if reset
+		$obj.store = ()
+	return store->concat()
 
-   <<<
+	<<<
 
-   !!!
-      Earlier version had all the references to `tagStack` and `store` prefixed
-      with explicit `$obj` context. But that shouldn't be necessary. Assigning a
-      new value to an object would definitely need the $obj prefix, (like
-      resetting `store` in `getHTML`) or else the variable would just be created
-      in `$loc`. But if we refer to an existing variable and then chain it to a
-      function call or use subscripting, that object reference has to be
-      resolved and once resolved the found object can be changed directly.
+	note : Note writing variables
+		Earlier version had all the references to `tagStack` and `store` prefixed
+		with explicit `$obj` context. But that shouldn't be necessary. Assigning a
+		new value to an object would definitely need the $obj prefix, (like
+		resetting `store` in `getHTML`) or else the variable would just be created
+		in `$loc`. But if we refer to an existing variable and then chain it to a
+		function call or use subscripting, that object reference has to be
+		resolved and once resolved the found object can be changed directly.
 
 section : HTMLElementComposer object
 
-   Here is the overall structure of the HTMLElementComposer. The
-   {element functions}[*Element functions] have already been defined, and the
-   remaining pieces will be defined below.
+	Here is the overall structure of the HTMLElementComposer. The
+	{element functions}[*Element functions] have already been defined, and the
+	remaining pieces will be defined below.
 
-   >>> HTMLElementComposer
+	>>> HTMLElementComposer
 
 HTMLElementComposer
 
-   <*Internal variables>
+	<*Internal variables>
 
-   <*Element functions>
+	<*Element functions>
 
-   <*Indentation>
+	<*Indentation>
 
-   <*Empty elements>
+	<*Empty elements>
 
 <*Tests>
 
-   <<<
+	<<<
 
-   The element functions rely on internal variables to keep track of nested
-   elements and accumulated output. Those variables have already been referenced
-   by the functions, with the names `tagStack` and `store`, respectively. They
-   are defined next.
+	The element functions rely on internal variables to keep track of nested
+	elements and accumulated output. Those variables have already been referenced
+	by the functions, with the names `tagStack` and `store`, respectively. They
+	are defined next.
 
-   !!!
-      Technically in Wry it is not necessary to set these variables when their
-      starting value is nil or nil-equivalent. But it is good practice to be
-      explicit, and IDE's can pick up on the variable names and provide
-      autocomplete suggestions.
+	!!!
+		Technically in Wry it is not necessary to set these variables when their
+		starting value is nil or nil-equivalent. But it is good practice to be
+		explicit, and IDE's can pick up on the variable names and provide
+		autocomplete suggestions.
 
-   >>> Internal variables
+	>>> Internal variables
 store = ''
 tagStack = ()
-   <<<
+	<<<
 
 section : Indentation
 
-   Most white space is ignored when parsing HTML, indentation is a convenience
-   for human readers, and can be especially helpful when debugging. Composer
-   will indent the output HTML if the flag `fIndent` is set to true. By default
-   it uses a tab character to indent, but that can be changed by setting the
-   `indentChar` to something else.
+	Most white space is ignored when parsing HTML, indentation is a convenience
+	for human readers, and can be especially helpful when debugging. Composer
+	will indent the output HTML if the flag `fIndent` is set to true. By default
+	it uses a tab character to indent, but that can be changed by setting the
+	`indentChar` to something else.
 
-   >>> Internal variables
+	>>> Internal variables
 fIndent = true
 indentChar = "\t"
-   <<<
+	<<<
 
-   The following function derives the indentation level from the level of nested
-   elements and returns a string of repeated `indentChar`'s.
+	The following function derives the indentation level from the level of nested
+	elements and returns a string of repeated `indentChar`'s.
 
-   >>> Indentation
+	>>> Indentation
 
 func getIndent
-   guard fIndent
-      return
-   if store   # Add a newline if `store` contains existing output.
-      "\n"
-   i = 0
-   do i < tagStack->count()
-      indentChar
-      continue i += 1
-   return $loc->filter({ return isNumeric(key) })->concat()
+	guard fIndent
+		return
+	if store   # Add a newline if `store` contains existing output.
+		"\n"
+	$arg.i = 0
+	do i < tagStack->count()
+		indentChar
+		continue $arg.i += 1
+	return $loc->concat()
 
-   <<<
+	<<<
 
-   With the `getIndentation` function defined, the placeholder for handling
-   indentation back in the {element functions}[*Element functions] can now be
-   completed.
+	With the `getIndentation` function defined, the placeholder for handling
+	indentation back in the {element functions}[*Element functions] can now be
+	completed.
 
-   >>> Handle indentation
-$obj.store[] = getIndent()
-   <<<
+	>>> Handle indentation
+store[] = getIndent()
+	<<<
 
 section : Void elements
 
-   Void elements take no content. See {HTML5 void elements}[*void-elem]. The
-   `getElement` function will automatically close them. To do so, the array
-   `empty` contains the void elements defined for HTML5 (as keys) and the
-   `isEmptyElement` function returns true if the supplied `elem` is in the
-   `empty` list; false otherwise.
+	Void elements take no content. See {HTML5 void elements}[*void-elem]. The
+	`getElement` function will automatically close them. To do so, the array
+	`empty` contains the void elements defined for HTML5 (as keys) and the
+	`isEmptyElement` function returns true if the supplied `elem` is in the
+	`empty` list; false otherwise.
 
-   void-elem : https://www.w3.org/TR/html5/syntax.html#void-elements
+	void-elem : https://www.w3.org/TR/html5/syntax.html#void-elements
 
-   >>> Empty Elements
+	>>> Empty Elements
 
 empty
-   'area' : true
-   'base' : true
-   'br' : true
-   'col' : true
-   'embed' : true
-   'hr' : true
-   'img' : true
-   'input' : true
-   'link' : true
-   'meta' : true
-   'param' : true
-   'source' : true
-   'track' : true
-   'wbr' : true
+	'area' : true
+	'base' : true
+	'br' : true
+	'col' : true
+	'embed' : true
+	'hr' : true
+	'img' : true
+	'input' : true
+	'link' : true
+	'meta' : true
+	'param' : true
+	'source' : true
+	'track' : true
+	'wbr' : true
 
-func isEmptyElement   #([elem])
-   elem ?= $arg[0]
-   return empty[elem]
+func isEmptyElement   # ([elem])
+	$arg.elem ?= $arg[0]
+	return empty[elem]
 
 test   #empty elements
-   isEmptyElement('meta') == true
-   isEmptyElement('div') == false
+	isEmptyElement('meta') == true
+	isEmptyElement('div') == false
 
-   <<<
+	<<<
 
 section : Tests
 
-   >>> Tests
+	>>> Tests
 
-test   #adding elements
-   cp = HTMLElementComposer
-   cp->addElement('p', content='Hello World!')
-   cp->addElement('p' content='Goodbye')
-   cp->getHTML() == '<p>Hello World!</p>\n<p>Goodbye</p>'
+test   # `getElement` function
+	$tst.cp = HTMLElementComposer
+	cp->getElement('img', attribs=(src='/logo')) == '<img src="/logo" />'
+	$tst.msg = 'Hello world!'
+	cp->getElement('p', attribs=(class='g'), content=msg, close=true) \
+		== '<p class="g">' + msg + 'Hello world!</p>'
+	$tst.attr = (class='a', id='23')
+	cp->getElement('div', attribs=attr) == '<div class="a" id="23">'
 
-test   #nesting elements
-   cp = HTMLElementComposer
-   cp->beginElement('div', class='z')
-   cp->beginElement('p')
-   cp->addCustom('welcome')
-   cp->endElement()
-   cp->endElement()
-   cp->getHTML() == '<div class="z">\n\t<p>welcome\n\t</p>\n</div>'
+test   # adding elements
+	$tst.cp = HTMLElementComposer
+	cp->addElement('p', content='Hello World!')
+	cp->addElement('p' content='Goodbye')
+	cp->getHTML() == "<p>Hello World!</p>\n<p>Goodbye</p>"
 
-   <<<
+test   # nesting elements
+	$tst.cp = HTMLElementComposer
+	cp->beginElement('div', class='z')
+	cp->beginElement('p')
+	cp->addCustom('welcome')
+	cp->endElement()
+	cp->endElement()
+	$tst.expectedResult
+		'<div class="z">'
+		"\n" + cp.indentChar
+		'<p>welcome'
+		"\n" + cp.indentChar
+		'</p>'
+		"\n"
+		'</div>''
+	cp->getHTML() == expectedResult
+
+	<<<
