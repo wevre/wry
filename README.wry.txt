@@ -1,9 +1,10 @@
-wry
-===========
+project : HTML Element Composer
+	author : Mike Weaver
+	created : 2018-06-13
+	copyright : © 2018 All rights reserved.
+	license : See [*License].
 
 A scripting language for web authoring.
-
-
 
 section : Grammar
 
