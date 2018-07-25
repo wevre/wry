@@ -705,10 +705,11 @@ into comments. This make it easy to comment out a block of code, you just prepen
 
 The `comment` comments out the `do` and all the code belonging to the `do` block.
 
-(2018-07-20) Alternatively, a comment block could be introduced by ///.
+(2018--07-20) Alternatively, a comment block could be introduced by ///.
 
-I've used # as a comment character in some places when writing about wry. But
-I think # needs to be reserved for labeling scopes and loops, so it is out as a comment character.
+I've used # as a comment character in some places when writing about wry. But  I
+think # needs to be reserved for labeling scopes and loops, so it is out as a
+comment character.
 
 section : Values and references
 
