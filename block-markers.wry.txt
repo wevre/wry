@@ -1,0 +1,101 @@
+project : wry block markers
+	author : Mike Weaver
+	created : 2018-07-25
+
+section : Introduction
+
+	Explore what characters could be used as block markers.
+
+section : Block markers
+
+	The following are all the common punctuation characters (on US English
+	keyboards) for syntax, and how they are (or might be) used in wry.
+
+	!!!
+		Some things might want to include:
+
+		*
+			Ability to do lines with specified breaks or custom indentation, such
+			as poetry. As an example, in SAM this is done with a pipe character at
+			the beginning of the line:
+
+			```
+				| A pipe followed by a space
+				|   indicates lines of text with
+				| fixed line breaks and indentation
+
+			An alternative would be to use a backslash to escape the indentation
+			that is supposed to be part of the line and not part of the document
+			structure.
+
+		*
+			Use `+++` to mark a table, with double colons as column delimiters. How
+			do we mark the header row? Maybe the column delimiter could be pipe?
+
+		*
+			SAM uses the marker >>> as in insert for, as an example, an image. In
+			wry this symbol is reserved for switching between prose and code mode,
+			so can't be used for this purpose. But another marker could be used.
+			Or, accomplish this another way, with a reference in text to a field
+			that defines an image.
+
+			```
+				Some wry prose with image reference [*image name].
+
+				image name : my_image.png
+
+		*
+			Equations could be handled with pre-composed text marker (three
+			backticks) and same for inline, surrounded by backticks, but we don't
+			want to see the specification in mono-spaced font, we actually want to
+			see the rendered equation. Sam uses an equal sign in the attribute
+			following the in-line code.
+
+			```(SAM) : SAM syntax for inline renders
+				Inline rendered content `\frac{a}{b}`(=latexmath).
+
+			We could use a `===` marker to indicate "don't print this in
+			mono-spaced font like a pre-composed block, but render it and replace".
+			But what about inline? Could surround with equal signs, similar to how
+			backticks are used to surround in-line pre-composed code. But that
+			would get confusing, especially as it seems often the text we want to
+			denote would include an equal sign. Could use angle brackets, showing a
+			similarity between popping out of prose mode to some sort of code mode.
+			Or could use curly brackets with an equal sign around the embedded
+			text, which makes the equal sign "magic" inside curly braces. That
+			problem exists with SAM's approach, where equal sign is magin in the
+			attribute parens.
+
+	+++ : Table of block markers
+		marker	:: description
+		```   	:: pre-composed text, prose mode
+		!!!   	:: remark, prose mode
+		$$$   	:: terminal session text, prose mode
+		<<<   	:: open or close code mode
+		>>>   	:: close or open code mode
+		+++   	:: tables, with `::` as column delimeter
+		"""   	:: block quote, prose mode
+		///   	:: comment block, code mode
+		===   	:: (maybe) embed block, prose mode
+		~~~   	::
+		@@@   	::
+		###   	::
+		%%%   	::
+		^^^   	::
+		&&&   	::
+		***   	::
+		(((   	::
+		)))   	::
+		---   	:: (hyphen)
+		___   	:: (underscore)
+		|||   	::
+		:::   	::
+		'''   	::
+		???   	::
+		;;;   	:: not used
+		{{{   	:: not used
+		}}}   	:: not used
+		[[[   	:: not used
+		]]]   	:: not used
+		,,,   	:: (comma) not used
+		...   	:: (period) not used

@@ -1,6 +1,6 @@
 /*
 	*	DentShavit.g4
-	*	https://github.com/wevrem/wren
+	*	https://github.com/wevrem/wry
 	*	Author: Mike Weaver
 */
 

@@ -1,0 +1,55 @@
+project : Antlr4 setup
+	author : Mike Weaver
+	created : 2018-07-28
+
+section : Introduction
+
+	This document outlines the steps I took to install and use Antlr4 on my local
+	machine. So much time passes between opportunities to play around with
+	grammars and wry that I need help remembering what my environment was and the
+	choices I made.
+
+section : Install Antrl4
+
+	Follow the directions at www.antlr.org to install Antlr. I did a local (not
+	system-wide) install in `~/Document/Programming/Antlr4` and created a
+	symbolic link to a generically named `antlr-current.jar`, then pointed
+	aliases and classpath to that "current" jar.
+
+	$$$
+		cd <ANTLR-LOCATION>
+		curl -0 https://www.antlr.org/download/antlr-4.7.1-complete.jar
+		ln -s antlr-4.7.1-complete.jar antlr-current.jar
+		vi ~/.bash_aliases
+		alias antlr4='java -Xmx500M org.antlr.v4.Tool'
+		alias grun='java org.antlr.v4.gui.TestRig'
+		:x
+		vi ~/.bash_profile
+		export CLASSPATH=".:<ANTLR-LOCATION>/antlr-current.jar:$CLASSPATH"
+		:x
+
+section : Running Antlr4
+
+	The wry project home is ~/Documents/Programming/wry Project` (a sibling
+	directory of Antlr4), under which is the `build` directory where generated
+	java class go. The grammars, including `TestDent`, live under the project
+	home in `wry-github/grammars`. Thus to compile, say, `TestDent` grammar,
+	execute the following:
+
+	$$$
+		antlr4 -o ../../build TestDent.g4
+
+section : Compiling a grammar
+
+	Change the build directory and run javac on the grammar files generated in the prior step.
+
+	$$$
+		javac TestDent*.java
+
+section : Testing a grammar
+
+	Test files live in `<wry project home>/wry-github/tests`. They can be
+	executed all together with the following (from the build directory):
+
+	$$$
+		for i in ../wry-github/tests/*; do echo "$i"; grun TestDent script -tokens $i; done > results-TestDent.txt 2>&1

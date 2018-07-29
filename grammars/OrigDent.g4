@@ -1,9 +1,18 @@
 /*
-project : DentLexer.g4
-web : https://github.com/wevrem/wry
-author : Mike Weaver
-created : 2016-05-23
-copyright : Copyright (c) 2017 Mike Weaver
+project : Dent.g4
+	web : https://github.com/wevrem/wry
+	author : Mike Weaver
+	created : 2016-05-23
+	copyright : Copyright (c) 2017 Mike Weaver
+
+!!!
+	This is the original Dent grammar, a proof-of-concept lexer/parser combo
+	grammar that incorporated the INDENT/DEDENT handling at the lexer level along
+	with simple parser rules to demonstrate its use. Basically a toy grammar.
+	This was replaced with a more suitable design where the core Dent logic lives
+	in its own lexer grammar and can be include'd in a larger full grammar.
+
+	I keep this grammar around, at the moment, for testing only.
 
 section : The MIT License
 
@@ -27,77 +36,73 @@ section : The MIT License
 
 section : Introduction
 
-	DentLexer is a lexer grammar that implements Python-style INDENT and DEDENT
-	tokens in ANTLR4. As is typical with such indentation-aware grammars, indeed
-	what could be considered their defining characteristics: (a) NEWLINE tokens
-	can't be ignored as whitespace, they are necessary to terminate statements;
-	and, (b) blocks are defined as statements sandwiched between INDENT and
-	DEDENT tokens.
+	Dent is a simple grammar that illustrates implementing Python-style INDENT
+	and DEDENT tokens in ANTLR4. As is typical with such indentation-aware
+	grammars, indeed what could be considered their defining characteristics: (a)
+	NEWLINE tokens can't be ignored as whitespace, they are necessary to
+	terminate statements; and, (b) blocks are defined as statements sandwiched
+	between INDENT and DEDENT tokens.
 
-	DentLexer is designed to be included inside a larger, full grammar and needs
-	to see whitespace and newlines to operate, emitting INDENT and DEDENT tokens
-	that the outer grammar can include in its rules. See the `TestDent`
-	grammar for an example.
+	Since Dent is only interested in correctly handling indentation, all the
+	lexer and parser rules that would normally define the statements and
+	expressions of a grammar are collapsed into a single LEGIT token, which grabs
+	everything that is not whitespace, comment, or NEWLINE.
 
-section : How DentLexer works
+	Dent will parse Python scripts and generate INDENT and DEDENT tokens to match
+	the indentation present in the file. It will catch the error of an unmatched
+	INDENT/DEDENT pair (which is a lexical error), but of course it can't
+	determine correct Python syntax (which is the role of the parser). Dent also
+	allows multi-line comments, something Python does not.
+
+section : How Dent works
 
 	1.
 		Upon encountering a NEWLINE token, set a flag and enter `pendingDent`
 		state where leading whitespace is counted to determine indentation of
 		current line.
 	2.
-		During `pendingDent` state all whitespace and NEWLINE tokens are set to
-		channel HIDDEN; and it is expected, but not required, that comments will
-		also be set to channel HIDDEN. In general practice, this is not an issue
-		for whitespace or comments, which are normally HIDDEN regardless. But if
+		During `pendingDent` state all whitespace, comments and NEWLINE tokens are
+		set to channel HIDDEN. In general practice, this is not an issue for
+		whitespace and comments, which are normally HIDDEN regardless. But if
 		needed, they could adopt the logic for NEWLINEs and switch to channel
 		HIDDEN only in `pendingDent` state. Importantly, a NEWLINE token in
 		`pendingDent` state resets the indentation count to 0. The upshot of all
 		this is:
+
 		a
 			the grammar ignores blank lines, even if they contain leading
 			whitespace that is inconsistent with the indentation of surrounding
 			non-blank lines; and,
 		b
 			for determining the indentation, whitespace is counted even if it is
-			interrupted by HIDDEN content, such as a comment (even a multi-line
-			comment).
+			interrupted by a comment (even a multi-line comment).
 	3.
-		The `pendingDent` state is terminated by any non-HIDDEN token, at which
+		The `pendingDent` state is terminated by a non-HIDDEN token, at which
 		point the indentation count is used to issue the proper combination of
-		INDENT and DEDENT tokens. These are inserted into a queue along with the
-		non-HIDDEN token and that queue is emptied during subsequent calls to the
+		INDENT and DEDENT tokens. These are placed in a queue along with the
+		non-HIDDEN token and the queue is emptied during subsequent calls to the
 		lexer's `nextToken()` method.
 	4.
 		An EOF token will terminate `pendingDent` state just like any other
-		non-HIDDEN token. But it also behaves like a NEWLINE and resets the
-		indentation count to 0. In fact, if not currently in `pendingDent` state,
-		it will issue an extra NEWLINE, which is needed to close off a
-		statement.
-		!!!
-			Are there situations where that extra NEWLINE would be undesirable?
-			Could the grammar be written such that statements are terminated by
-			either NEWLINE *or* EOF, and then DentLexer doesn't have to issue an
-			extra NEWLINE?
+		non-HIDDEN token. It will also reset the indentation count to 0 and, if
+		not currently in `pendingDent` state, prior to any DEDENTs it will trigger
+		an extra NEWLINE, which is needed to close off a statement.
 
-	section : How to use DentLexer
-
-		1.
-			The explicit INDENT and DEDENT tokens will be included in the generated
-			<Grammar>Parser class but *not* in the <Grammar>Lexer class, which is
-			where the below code needs to refer to them. To overcome this, include
-			a @lexer::member action in your grammar and define constants
-			TOKEN_INDENT and TOKEN_DEDENT using token constants from
-			<Grammar>Parser. Again, see `TestDent` for an example.
-		2.
-			Include DentLexer in your grammar, see `TestDent` grammar for an
-			example.
-		3.
-			For tokens that should be ignored during `pendingDent` state (typically
-			comments) set their channel to HIDDEN.
+section : Using Dent with non-toy grammars
+	1.
+		Replace the LEGIT token with the lexer and parser rules specific to your
+		grammar.
+	2.
+		Change the references to DentParser.INDENT and DentParser.DEDENT to the
+		name of your own parser class.
+	3.
+		If you have tokens that should be ignored during `pendingDent` state,
+		similar to or perhaps variants of whitespace, comments and NEWLINE, then
+		be sure to set them to channel HIDDEN, either permanently or, at a
+		minimum, during `pendingDent` state.
 */
 
-lexer grammar DentLexer;
+grammar OrigDent;
 
 tokens { INDENT, DEDENT }
 
@@ -136,7 +141,6 @@ tokens { INDENT, DEDENT }
 		if (!tokenQueue.isEmpty()) { return tokenQueue.poll(); }
 
 		// Grab the next token and if nothing special is needed, simply return it.
-		// Initialize `initialIndentToken` if needed.
 		Token next = super.nextToken();
 		//NOTE: This could be an appropriate spot to count whitespace or deal with
 		//NEWLINES, but it is already handled with custom actions down in the
@@ -160,10 +164,10 @@ tokens { INDENT, DEDENT }
 		while (indentCount != getSavedIndent()) {
 			if (indentCount > getSavedIndent()) {
 				indentStack.push(indentCount);
-				tokenQueue.offer(createToken(INDENT_TOKEN, "INDENT" + indentCount, next));
+				tokenQueue.offer(createToken(OrigDentParser.INDENT, "INDENT" + indentCount, next));
 			} else {
 				indentStack.pop();
-				tokenQueue.offer(createToken(DEDENT_TOKEN, "DEDENT"+getSavedIndent(), next));
+				tokenQueue.offer(createToken(OrigDentParser.DEDENT, "DEDENT"+getSavedIndent(), next));
 			}
 		}
 		pendingDent = false;
@@ -173,14 +177,22 @@ tokens { INDENT, DEDENT }
 
 }
 
-NEWLINE : ( '\r'? '\n' | '\r' ) {
-	if (pendingDent) { setChannel(HIDDEN); }
-	pendingDent = true;
-	indentCount = 0;
-	initialIndentToken = null;
-} ;
+script : ( NEWLINE | statement )* EOF ;
 
-WS : [ \t]+ {
-	setChannel(HIDDEN);
-	if (pendingDent) { indentCount += getText().length(); }
-} ;
+statement
+	:	simpleStatement
+	|	blockStatements
+	;
+
+simpleStatement : LEGIT+ NEWLINE ;
+
+blockStatements : LEGIT+ NEWLINE INDENT statement+ DEDENT ;
+
+NEWLINE : ( '\r'? '\n' | '\r' ) { if (pendingDent) { setChannel(HIDDEN); } pendingDent = true; indentCount = 0; initialIndentToken = null; } ;
+
+WS : [ \t]+ { setChannel(HIDDEN); if (pendingDent) { indentCount += getText().length(); } } ;
+
+BlockComment : '/*' ( BlockComment | . )*? '*/' -> channel(HIDDEN) ;   // allow nesting comments
+LineComment : '//' ~[\r\n]* -> channel(HIDDEN) ;
+
+LEGIT : ~[ \t\r\n]+ ~[\r\n]* ;   // Replace with language-specific rules...
