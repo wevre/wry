@@ -99,8 +99,6 @@ section : How DentLexer works
 
 lexer grammar DentLexer;
 
-tokens { INDENT, DEDENT }
-
 @lexer::members {
 
 	// Initializing `pendingDent` to true means any whitespace at the beginning
@@ -160,10 +158,10 @@ tokens { INDENT, DEDENT }
 		while (indentCount != getSavedIndent()) {
 			if (indentCount > getSavedIndent()) {
 				indentStack.push(indentCount);
-				tokenQueue.offer(createToken(INDENT_TOKEN, "INDENT" + indentCount, next));
+				tokenQueue.offer(createToken(INDENT, "INDENT" + indentCount, next));
 			} else {
 				indentStack.pop();
-				tokenQueue.offer(createToken(DEDENT_TOKEN, "DEDENT"+getSavedIndent(), next));
+				tokenQueue.offer(createToken(DEDENT, "DEDENT"+getSavedIndent(), next));
 			}
 		}
 		pendingDent = false;
@@ -184,3 +182,6 @@ WS : [ \t]+ {
 	setChannel(HIDDEN);
 	if (pendingDent) { indentCount += getText().length(); }
 } ;
+
+INDENT : 'INDENT' { setChannel(HIDDEN); };
+DEDENT : 'DEDENT' { setChannel(HIDDEN); };

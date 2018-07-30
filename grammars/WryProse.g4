@@ -12,30 +12,25 @@ section : Introduction
 
 grammar WryProse;
 
-@lexer::members {
-	private int INDENT_TOKEN = WryProseParser.INDENT;
-	private int DEDENT_TOKEN = WryProseParser.DEDENT;
-}
-
 import DentLexer;
 
 script : ( NEWLINE | prose )* EOF ;
 
 prose
-	:	flow
+	:	blockStatement
 	|	fieldStatement
-	|	blockStatement
+	|	flow
 	;
 
-flow : (Name|NonName)+ NEWLINE ;
+blockStatement : nameAndTitle INDENT prose+ DEDENT ;
+
+fieldStatement : nameAndTitle ;
 
 nameAndTitle : Name (Colon title)? NEWLINE ;
 
 title : (Name|NonName)+ ;
 
-fieldStatement : nameAndTitle ;
-
-blockStatement : nameAndTitle INDENT prose+ DEDENT ;
+flow : (Name|NonName)+ NEWLINE ;
 
 BlockComment : '/*' ( BlockComment | . )*? '*/' -> channel(HIDDEN) ;   // allow nesting comments
 LineComment : '//' ~[\r\n]* -> channel(HIDDEN) ;
@@ -46,4 +41,4 @@ fragment NameChar : [0-9] | NameHead;
 
 Colon : ':' ;
 
-NonName : ~[ \t\r\n]+ ~[\r\n]* ;
+NonName : ~[ \t\r\n]+ ;

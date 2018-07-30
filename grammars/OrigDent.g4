@@ -12,7 +12,7 @@ project : Dent.g4
 	This was replaced with a more suitable design where the core Dent logic lives
 	in its own lexer grammar and can be include'd in a larger full grammar.
 
-	I keep this grammar around, at the moment, for testing only.
+	I keep this grammar around, for the time being, for testing only.
 
 section : The MIT License
 
