@@ -23,14 +23,14 @@ section : Dent
 	whitespace following a `NEWLINE` is counted to determine the indentation for
 	that line.
 
-	The first solution I explored was the {Python3.g4 grammar}[*python3.g4]
-	written by Bart Kiers in 2014. It relies on low-level aspects of the Antlr4
-	runtime. For example, to detect blank lines and comments, rather than
-	examining tokens, it instead queries the underlying character stream.
-	Accessing the runtime at that lower level, where the authors of Antlr are
-	more likely to make changes with future updates, seems very fragile to me.
+	The first solution I explored was the [*Python3.g4 grammar] written by Bart
+	Kiers in 2014. It relies on low-level aspects of the Antlr4 runtime. For
+	example, to detect blank lines and comments, rather than examining tokens, it
+	instead queries the underlying character stream. Accessing the runtime at
+	that lower level, where the authors of Antlr are more likely to make changes
+	with future updates, seems very fragile to me.
 
-	python3.g4 : https://github.com/bkiers/python3-parser
+	Python3.g4 grammar : https://github.com/bkiers/python3-parser
 
 	The Python3 grammar also uses an override of `emit()` as the place to insert
 	tokens into the queue, which seems backwards. That is the location where

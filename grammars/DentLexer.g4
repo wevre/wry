@@ -65,14 +65,14 @@ section : How DentLexer works
 	3.
 		The `pendingDent` state is terminated by any non-HIDDEN token, at which
 		point the indentation count is used to issue the proper combination of
-		INDENT and DEDENT tokens. These are inserted into a queue along with the
-		non-HIDDEN token and that queue is emptied during subsequent calls to the
-		lexer's `nextToken()` method.
+		INDENT and DEDENT tokens. These are inserted into a queue along with, and
+		ahead of, the non-HIDDEN token and that queue is emptied during subsequent
+		calls to the lexer's `nextToken()` method.
 	4.
 		An EOF token will terminate `pendingDent` state just like any other
 		non-HIDDEN token. But it also behaves like a NEWLINE and resets the
 		indentation count to 0. In fact, if not currently in `pendingDent` state,
-		it will issue an extra NEWLINE, which is needed to close off a
+		DentLexer will issue an extra NEWLINE, which is needed to close off a
 		statement.
 		!!!
 			Are there situations where that extra NEWLINE would be undesirable?
@@ -83,16 +83,9 @@ section : How DentLexer works
 	section : How to use DentLexer
 
 		1.
-			The explicit INDENT and DEDENT tokens will be included in the generated
-			<Grammar>Parser class but *not* in the <Grammar>Lexer class, which is
-			where the below code needs to refer to them. To overcome this, include
-			a @lexer::member action in your grammar and define constants
-			TOKEN_INDENT and TOKEN_DEDENT using token constants from
-			<Grammar>Parser. Again, see `TestDent` for an example.
-		2.
 			Include DentLexer in your grammar, see `TestDent` grammar for an
 			example.
-		3.
+		2.
 			For tokens that should be ignored during `pendingDent` state (typically
 			comments) set their channel to HIDDEN.
 */
