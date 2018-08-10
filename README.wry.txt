@@ -8,7 +8,7 @@ A scripting language for web authoring.
 
 section : Grammar
 
-	See [wry grammar](grammars/Wry.g4).
+	See {wry grammar}[*grammars/Wry.g4].
 
 section : Types
 
@@ -16,6 +16,16 @@ section : Types
 	`Null`, `Array`, and `Function`. The `Array` type replaces what would be
 	arrays, dictionaries, class instances, and parameter lists in other
 	languages. It is an ordered map and behaves similarly to PHP's array type.
+
+	!!!
+		Not sure if anyone else has coined this already, but I think I'll refer to
+		the data structure that implements arrays as a "sortmap".
+
+	!!!
+		Probably a "chain" (or whatever I call it, maybe "stack"?) will be another
+		type. It's a stack of arrays. Functions and chains can also be combined,
+		and is that a different type or is that still a function type (just with
+		some data already chained to it)?
 
 	The simple types (`Integer`, `Float`, `Bool`, `String`, `Null`) will be
 	familiar to users of other languages, and can be created with literals that
@@ -28,22 +38,22 @@ section : Types
 		employee = "John Smith"
 		flag = null
 
-		Those 5 simple types are scalars, whereas the `Array` type is a compound
-		object.
+	Those 5 simple types are scalars, whereas the `Array` type is a compound
+	object.
 
 section : Arrays
 
 	Arrays are an ordered hashmap. That means it preserves the order of the keys
 	as items are inserted into the array. (Implementing it means something like a
-	hashmap combined with a linked list.)
+	hashmap combined with a linked list, I'm going to call it a "sortmap".)
 
-	To create an array, separate array elements with commas. A trailing comma is
-	allowed, and in fact is often useful to coerce something to an array. An
-	array can be a simple list of other types (no keys), in which case
-	incrementing integer keys will automatically be applied. Or it can be more
-	like a dictionary with keys and values, separate by colons and commas. Keys
-	are of type `String` or `Int`, or expressions that evaluate to one of these.
-	Entries in the array can be retrieved by key.
+	To create an array, list out elements (keys and values) separated by commas.
+	A trailing comma is allowed, and in fact is often useful to coerce something
+	to an array. An array can be a simple list of other types (no keys), in which
+	case incrementing integer keys will automatically be applied. Or it can be
+	more like a dictionary with keys and values, separate by colons and commas.
+	Keys are of type `String` or `Int`, or expressions that evaluate to one of
+	these. Entries in the array can be retrieved by key.
 
 	```
 		employee = ('first': 'mike', 'last': 'weaver', 'empl-id': 1234, 10.5)
@@ -100,6 +110,8 @@ section : Arrays
 		preserved from the original. (... or, why not preserve integer indices? we
 		can always have a method to "reset" array indices if that is desirable.)
 
+		Would this kind of syntax be allowed as an lvalue?
+
 	Arrays keys can be declared in different ways. The following are equivalent:
 
 	```
@@ -138,6 +150,8 @@ section : Arrays
 	!!!
 		I'm liking empty parens as representative of an empty array. Also use to
 		initialize an empty array.
+	!!!
+		This of course screams out to use records.
 
 !!! Continue converting this into wry prose.
 
@@ -284,7 +298,13 @@ section : Loops
 
 	!!!
 		Question: should `val` be a reference to the array element, instead of a
-		copy? One could always access the original object using the `key`.
+		copy? One could always access the original object using the `key`. For
+		instance, suppose we wanted to iterate over an array of numbers and add 1
+		to each one:
+		```
+			for arr_of_numbers
+				arr_of_numbers[key] += 1
+			array_of_numbers->map({ $obj[key] += 1})
 
 	!!!
 		2018-04-26: With `for` loops, if they are nested, we need to distinguish
@@ -299,16 +319,27 @@ section : Loops
 		for array_of_stuff use index=value
 			// now we can use variables index and value.
 
-	for array_of_stuff #outer
-		for val #inner
-			// here we can use key and val, but also
-			// @outer.key and @outer.val ????
+		for array_of_stuff<key,val>
+			for val<iKey,iVal>
+				...
+		for array_of_stuff #outer
+			for val #inner
+				// here we can use key and val, but also
+				// @outer.key and @outer.val ????
 
 	!!!
 		I like that last one, it uses labels and hints at the notion of nested
 		scopes, so does that mean there is some sort of implicit wend going on
 		with the loops? It also has cleaner syntax, because we don't have to
 		introduce a new keyword `as` or `using` or something.
+	!!!
+		Good question about scopes. In PHP, variables defined inside of loops or
+		branches are available outside the loop or branch, which I prefer to, say
+		C++ where brackets introduce a new scope, even for if and while
+		statements.
+	!!!
+		I'm starting to think of angle brackets as the syntax to use for
+		"placeholders", whatever that might mean in different contexts.
 
 The `do` statement begins a block of code that can be repeated with a `continue` statement
 somewhere inside the block. The `do` block can also be exited with a `break` statement. If
@@ -329,7 +360,7 @@ Many loops will start with a test, similar to a standard `while` statement in C:
 
   	do
  			if !<while-condition> break
- 			...
+ 				...
 
 To keep the syntax clean (and prevent excessive indenting), a special form of the `do`
 statement allows for a test at the top of the loop:
@@ -480,11 +511,11 @@ to explicitly refer to it's containing scope (`$loc`), like so:
   	p->$loc.fullName()
 
 Some functions don't need named parameters, so a simple array object can be provided.
-Internally, the function refers to the arguments with an automatic variable `$args`.
+Internally, the function refers to the arguments with an automatic variable `$arg`.
 
   	func sum
  			t = 0
- 			for $args t += $val
+ 			for $arg t += $val
  			return t
 
 The `for` block operates on an array in a loop, and at each iteration provides variables
@@ -511,6 +542,10 @@ scope will be passed to the next function in the chain. If it returns a value, h
 then that value will take over and replace the `$obj` scope for the next function in the
 chain. (Note that a function that returns a value is interpreted, at the call site, as an
 expression and the returned value will be added to the current scope.)
+
+Maybe another way to think about that last paragraph is that if a function
+doesn't have a  return statement, it should be considered to have an implicit
+`return $obj` (which brings up questions about copies vs references).
 
 Suppose we have this function defined:
 
