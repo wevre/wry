@@ -861,3 +861,29 @@ section : Values and references
 	Do we need to distinguish between chains formed by the runtime (for example,
 	for copy-on-write and tagged objects as described above) and those formed
 	explicitly by the user? Or does it matter?
+
+section : Other things I thought of
+
+	It might be handy to have statement blocks for logical and, or and not (and
+	maybe, xor) so that conditions can be constructed in a clear fashion.
+
+	```
+		out_of_range = and
+			val < 32
+			val > 47
+
+		or   // this is interesting but what are we doing with the result?
+			val == 100
+			and
+				val < 32
+				val > 47
+		important number = not or
+			val == 100
+			and
+				val < 32
+				val > 47
+	What if you sugared the == operator to allow for epsilon testing of floats?
+
+	```
+		if x ==<1e-6> y
+			...
