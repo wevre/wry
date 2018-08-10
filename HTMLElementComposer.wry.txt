@@ -10,7 +10,8 @@ section : Introduction
 	tags, attributes and content. Content can be text or child elements, nested
 	to arbitrary levels. See {W3C HTML syntax}[*elem-url].
 
-	elem-url : https://www.w3.org/TR/html5/syntax.html
+	link : elem-url
+		https://www.w3.org/TR/html5/syntax.html
 
 	HTMLElementComposer, or Composer for short, is an object to help compose
 	proper HTML. Composer keeps track of nested elements. It can indent the
@@ -33,6 +34,10 @@ section : Creating an element
 	element with an end tag. Note that {void elements}[*Void elements] take no
 	content and are always closed with ' \>' regardless of the flag.
 
+	!!! : Table of arguments
+		Should put a table in here for the arguments of `getElement`. It will make
+		it easier to see at a glance what is going on.
+
 	The arguments to `getElement` should be valid HTML but the function does not
 	enforce that. It transforms the keys and values in the `attribs` argument
 	into HTML attributes, wrapping the values in double quotes. Those values
@@ -46,35 +51,31 @@ section : Creating an element
 
 	>>> Element functions
 
-func getElement   # ([elem], attribs=(), content='', close=false)
+func getElement   // ([elem], attribs=(), content='', close=false)
 	$arg.elem ?= $arg[0]
 	guard elem
 		return
 	'<' + elem
 	for attribs
 		' ' + key + '="' + val + '"'
-	if isEmptyElement(elem)   # See [*Note static]
+	if isEmptyElement(elem)   // See [*Note static]
 		' />'
 	else
 		'>'
 		content
 		if close
 			'</' + elem + '>'
-	return $loc->concat()   # See [*Note loc concat]
+	return $loc->concat()   // See [*Note loc concat]
 
 	<<<
-
-	!!!
-		I'm using # throughout this document to create a comment, but I also had
-		notes to use that as a badge for marking scopes. Maybe comments need to be
-		marked with something else, like `//`.
 
 	note : Note static
 		Functions `getElement` and `isEmptyElement` operate somewhat like "static"
 		methods, in that they don't technically need an object context and don't
-		change any state. They will be called, however, by the other methods of
-		HTMLElementComposer and so will automatically inherit an object scope.
-		That is needed, by the way, in for `getElement` to call `isEmptyElement`.
+		change any state. It is assumed, however, that they will be called by the
+		other methods of HTMLElementComposer and so will automatically inherit an
+		object scope. That object scope is necessary in order to resolve the call
+		above to `isEmptyElement`.
 
 	note : Note loc concat
 		The `getElement` function, as with the `getIndent` function below, builds
@@ -82,7 +83,9 @@ func getElement   # ([elem], attribs=(), content='', close=false)
 		get tricky if the code includes setting variables, which would then also
 		be in the local context and included in the final concat. To avoid this,
 		we set values in a different context (typically $arg) so that local
-		contains only our desired results expressions.
+		contains only our desired results expressions. Another way to achieve this
+		is to use the `_` prefix on any local variables, which `concat` will hide
+		by default.
 
 	The next set of functions comprise the main API of Composer. They use
 	`getElement` defined above to generate output, which is stored internally;
@@ -115,20 +118,19 @@ func getElement   # ([elem], attribs=(), content='', close=false)
 	Note the functions below have placeholders for handling indentation, which
 	will be dealt with later in this document.
 
-	>>> Element functions
+	<<< Element functions
 
-func beginElement   # ([elem], attribs=(), content='', class=nil)
+func beginElement   // ([elem], class=nil, attribs=(), content='')
 	$arg.elem ?= $arg[0]
 	guard elem
 		return
 	if isEmptyElement(elem) with
-		'`beginElement` called with void element '
-		'"' + elem + '". '
+		'`beginElement` called with void element "' + elem + '".'
 		'Use `addElement` instead.'
-		throw (msg=$loc->concat())
+		throw(msg=$loc->concat(sep=" "))
 	if class
 		attribs['class'] = class
-	tagStack->push(elem)   # See [*Note writing variables]
+	tagStack->push(elem)   // See [*Note writing variables]
 	<*Handle indentation>
 	store[] = getElement(elem, ~attribs, ~content)
 
@@ -139,7 +141,7 @@ func endElement
 	<*Handle indentation>
 	store[] = '</' + elem + '>'
 
-func addElement   # ([elem], attribs=(), content='', class=nil)
+func addElement   // ([elem], class=nil, attribs=(), content='')
 	$arg.elem ?= $arg[0]
 	guard elem
 		return
@@ -148,11 +150,11 @@ func addElement   # ([elem], attribs=(), content='', class=nil)
 	<*Handle indentation>
 	store[] = getElement(elem, ~attribs, ~content, close: true)
 
-func addCustom   #([string])
+func addCustom   // ([string])
 	$arg.string ?= $arg[0]
 	store[] = string
 
-func getHTML   # (reset=true)
+func getHTML   // (reset=true)
 	guard tagStack->isEmtpy()
 		throw (msg='There are unclosed elements')
 	reset ?= true
@@ -160,7 +162,7 @@ func getHTML   # (reset=true)
 		$obj.store = ()
 	return store->concat()
 
-	<<<
+	>>>
 
 	note : Note writing variables
 		Earlier version had all the references to `tagStack` and `store` prefixed
@@ -171,13 +173,17 @@ func getHTML   # (reset=true)
 		function call or use subscripting, that object reference has to be
 		resolved and once resolved the found object can be changed directly.
 
+		!!!
+			Is that still true with subscripting with empty brackets? That sort of
+			assignment could just as easily generate a new variable in $loc scope.
+
 section : HTMLElementComposer object
 
 	Here is the overall structure of the HTMLElementComposer. The
 	{element functions}[*Element functions] have already been defined, and the
 	remaining pieces will be defined below.
 
-	>>> HTMLElementComposer
+	<<< HTMLElementComposer
 
 HTMLElementComposer
 
@@ -189,9 +195,7 @@ HTMLElementComposer
 
 	<*Empty elements>
 
-<*Tests>
-
-	<<<
+	>>>
 
 	The element functions rely on internal variables to keep track of nested
 	elements and accumulated output. Those variables have already been referenced
@@ -204,10 +208,10 @@ HTMLElementComposer
 		explicit, and IDE's can pick up on the variable names and provide
 		autocomplete suggestions.
 
-	>>> Internal variables
+	<<< Internal variables
 store = ''
 tagStack = ()
-	<<<
+	>>>
 
 section : Indentation
 
@@ -217,20 +221,20 @@ section : Indentation
 	it uses a tab character to indent, but that can be changed by setting the
 	`indentChar` to something else.
 
-	>>> Internal variables
+	<<< Internal variables
 fIndent = true
 indentChar = "\t"
-	<<<
+	>>>
 
 	The following function derives the indentation level from the level of nested
 	elements and returns a string of repeated `indentChar`'s.
 
-	>>> Indentation
+	<<< Indentation
 
 func getIndent
 	guard fIndent
 		return
-	if store   # Add a newline if `store` contains existing output.
+	if store   // Add a newline if `store` contains existing output.
 		"\n"
 	$arg.i = 0
 	do i < tagStack->count()
@@ -238,15 +242,15 @@ func getIndent
 		continue $arg.i += 1
 	return $loc->concat()
 
-	<<<
+	>>>
 
 	With the `getIndentation` function defined, the placeholder for handling
 	indentation back in the {element functions}[*Element functions] can now be
 	completed.
 
-	>>> Handle indentation
+	<<< Handle indentation
 store[] = getIndent()
-	<<<
+	>>>
 
 section : Void elements
 
@@ -258,7 +262,7 @@ section : Void elements
 
 	void-elem : https://www.w3.org/TR/html5/syntax.html#void-elements
 
-	>>> Empty Elements
+	<<< Empty Elements
 
 empty
 	'area' : true
@@ -276,21 +280,21 @@ empty
 	'track' : true
 	'wbr' : true
 
-func isEmptyElement   # ([elem])
+func isEmptyElement   // ([elem])
 	$arg.elem ?= $arg[0]
 	return empty[elem]
 
-test   #empty elements
+test   // empty elements
 	isEmptyElement('meta') == true
 	isEmptyElement('div') == false
 
-	<<<
+	>>>
 
 section : Tests
 
-	>>> Tests
+	<<< HTMLElementComposer
 
-test   # `getElement` function
+test   // `getElement` function
 	$tst.cp = HTMLElementComposer
 	cp->getElement('img', attribs=(src='/logo')) == '<img src="/logo" />'
 	$tst.msg = 'Hello world!'
@@ -299,13 +303,13 @@ test   # `getElement` function
 	$tst.attr = (class='a', id='23')
 	cp->getElement('div', attribs=attr) == '<div class="a" id="23">'
 
-test   # adding elements
+test   // adding elements
 	$tst.cp = HTMLElementComposer
 	cp->addElement('p', content='Hello World!')
 	cp->addElement('p' content='Goodbye')
 	cp->getHTML() == "<p>Hello World!</p>\n<p>Goodbye</p>"
 
-test   # nesting elements
+test   // nesting elements
 	$tst.cp = HTMLElementComposer
 	cp->beginElement('div', class='z')
 	cp->beginElement('p')
@@ -322,4 +326,4 @@ test   # nesting elements
 		'</div>''
 	cp->getHTML() == expectedResult
 
-	<<<
+	>>>
