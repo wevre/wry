@@ -30,7 +30,8 @@ section : Dent
 	that lower level, where the authors of Antlr are more likely to make changes
 	with future updates, seems very fragile to me.
 
-	Python3.g4 grammar : https://github.com/bkiers/python3-parser
+	link : Python3.g4 grammar
+		https://github.com/bkiers/python3-parser
 
 	The Python3 grammar also uses an override of `emit()` as the place to insert
 	tokens into the queue, which seems backwards. That is the location where
@@ -55,7 +56,8 @@ section : Dent
 	I'm faced with the prospect of modifications that will inevitably evolve into
 	a re-write.
 
-	antlr-denter : https://github.com/yshavit/antlr-denter
+	link : antlr-denter
+		https://github.com/yshavit/antlr-denter
 
 	The solution I wrote myself, Dent.g4, is different from both of these. It
 	integrates with the runtime solely via an override of the Lexer's
