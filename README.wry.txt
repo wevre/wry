@@ -922,3 +922,6 @@ section : Other things I thought of
 	```
 		if x ==<1e-6> y
 			...
+
+	``` : Hashing
+		Check out details on SIP hashes.

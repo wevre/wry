@@ -87,6 +87,9 @@ func getElement   // ([elem], attribs=(), content='', close=false)
 		is to use the `_` prefix on any local variables, which `concat` will hide
 		by default.
 
+		!!!
+			For this to work, `key` and `val` can't stick around in $loc. Maybe for loops these two live in a separate scope that sits in front of $loc just for the duration of the loop, and assignment still happens in $loc (not in the temporary loop scope).
+
 	The next set of functions comprise the main API of Composer. They use
 	`getElement` defined above to generate output, which is stored internally;
 	and they manage nested elements, which are tracked in an internal stack.
@@ -155,7 +158,7 @@ func addCustom   // ([string])
 	store[] = string
 
 func getHTML   // (reset=true)
-	guard tagStack->isEmtpy()
+	guard tagStack->isEmpty()
 		throw (msg='There are unclosed elements')
 	reset ?= true
 	defer if reset
@@ -176,6 +179,36 @@ func getHTML   // (reset=true)
 		!!!
 			Is that still true with subscripting with empty brackets? That sort of
 			assignment could just as easily generate a new variable in $loc scope.
+			One upshot of this is you can't mask a variable in the $obj scope by
+			setting it to null in the $loc scope.
+
+			```
+				func
+					tagStack = null
+					tagStack->print()
+
+			If `tagStack` exists in the $obj scope (assume it does in the example
+			above) then it will get printed. Setting it to null does so in the $loc
+			scope, but does not affect anything in the $obj scope. To truly delete
+			it, you could either include the $obj scope as you set to null, or
+			explicitly reference $loc scope.
+
+			```
+				func
+					$obj.tagStack = null
+					tagStack->print()
+			```
+				func
+					$loc.tagStack = null
+					$loc.tagStack->print()
+
+		!!!
+			(2018-08-15) I think with empty brackets, the action should be to edit
+			an object in the nearest scope (creating it if necessary) so the
+			references to `store` should all be scoped (or qualified, or whatever
+			term we come up with). Still thinking about what happens when you chain
+			an unscoped object, like `tagStack` and what that means in terms of
+			editing it.
 
 section : HTMLElementComposer object
 
@@ -236,10 +269,10 @@ func getIndent
 		return
 	if store   // Add a newline if `store` contains existing output.
 		"\n"
-	$arg.i = 0
-	do i < tagStack->count()
+	_i = 0
+	do _i < tagStack->count()
 		indentChar
-		continue $arg.i += 1
+		continue _i += 1
 	return $loc->concat()
 
 	>>>
@@ -249,7 +282,7 @@ func getIndent
 	completed.
 
 	<<< Handle indentation
-store[] = getIndent()
+$obj.store[] = getIndent()
 	>>>
 
 section : Void elements
