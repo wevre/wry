@@ -83,16 +83,16 @@ section : Arrays
 	either an `Int` or `String` that represents the key.
 
 	```
-		cutoffs[0] // 15.0
-		employee['first'] // 'mike'
+		cutoffs[0]   // 15.0
+		employee['first']   // 'mike'
 		key = 'first'
-		employee[key] // 'mike'
+		employee[key]   // 'mike'
 
 	An alternate way to retrieve keyed items in the array uses a dot syntax. In
 	this case, the key for the item must be a string that is also a valid name.
 
 	```
-		employee.first // equivalent to employee['first']
+		employee.first   // equivalent to employee['first']
 
 	!!! Experimental subscripts
 
@@ -101,7 +101,7 @@ section : Arrays
 		Integer will emit a warning.
 
 		```
-			cutoffs[0, 2] //  0 and 1
+			cutoffs[0, 2]   //  0 and 1
 			employee['first', 'empl-id']
 
 		The two expressions above, instead of returning a single item from the
@@ -140,10 +140,10 @@ section : Arrays
 
 	```
 		people
-			,   # Or maybe empty brackets `[]`, or empty parens `()`
+			,   // Or maybe empty brackets `[]`, or empty parens `()`
 				'name': 'mike'
 				'age': 42
-			,   # Another option might be to use a bare underscore: _
+			,   // Another option might be to use a bare underscore: _
 				'name': 'fred'
 				'age': 34
 
@@ -339,7 +339,8 @@ section : Loops
 		statements.
 	!!!
 		I'm starting to think of angle brackets as the syntax to use for
-		"placeholders", whatever that might mean in different contexts.
+		"placeholders", whatever that might mean in different contexts. But how
+		would the example above be distinguished from chaining an argument scope?
 
 The `do` statement begins a block of code that can be repeated with a `continue` statement
 somewhere inside the block. The `do` block can also be exited with a `break` statement. If
@@ -860,9 +861,9 @@ section : Values and references
 	badges. Maybe with parens:
 
 	```
-		counter#(theBaseName)
+		counter #(theBaseName)
 
-		...   # inside the function
+		...   // inside the function
 		@(theBaseName).count
 
 	!!!
@@ -885,6 +886,11 @@ section : Values and references
 
 		It's maybe not as visible as the parens, but syntax highlighting could
 		help with that.
+
+		What if the expression involved the ternary operator `?:`? It would
+		probably have higher precedence than a "wrapping" operator implemented
+		with colons... but still, seems confusing. Maybe parens are best for this
+		situation because they are natural "wrapping" operators.
 
 	We should be able to put tags on items as they are declared, like we did
 	above with `counter` and also when composing. Those tags should not clobber
@@ -925,3 +931,32 @@ section : Other things I thought of
 
 	``` : Hashing
 		Check out details on SIP hashes.
+
+section : Name lookup
+
+	Membership lookup using `.` operator. The key must be a valid name.
+
+	``` dot operator
+		team.boss.firstName
+
+	Subscript lookup using `[]` operator. The key can be any string, doesn't have
+	to be a valid name, and the expression inside brackets must evaluate to a
+	string (or an integer).
+
+	```
+		team['boss']['firstName']
+
+	Key path lookup using the `~` expansion operator. The idea here is we have a
+	string of arbitrary period-separated keys and the expansion operator will
+	allow dynamic (run-time) resolution of the keys, drilling down into the
+	hierarchy.
+
+	```
+		keypath = 'boss.firstName'
+		team~keypath
+
+	The syntax is `<name> <~> <name>` or `<name> <~> <(> <expression> <)>`. This
+	is a binary operator in contrast with the other cases of expansion with are
+	unary.
+
+	What type of code would you write to do this without a special syntax?

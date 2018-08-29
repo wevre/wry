@@ -88,7 +88,10 @@ func getElement   // ([elem], attribs=(), content='', close=false)
 		by default.
 
 		!!!
-			For this to work, `key` and `val` can't stick around in $loc. Maybe for loops these two live in a separate scope that sits in front of $loc just for the duration of the loop, and assignment still happens in $loc (not in the temporary loop scope).
+			For this to work, `key` and `val` can't stick around in $loc. Maybe for
+			loops these two live in a separate scope that sits in front of $loc
+			just for the duration of the loop, and assignment still happens in $loc
+			(not in the temporary loop scope).
 
 	The next set of functions comprise the main API of Composer. They use
 	`getElement` defined above to generate output, which is stored internally;
