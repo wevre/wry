@@ -1,0 +1,302 @@
+project : learn wry
+	author : Mike Weaver
+	created : 2018-08-29
+	copyright : © 2018 All rights reserved.
+	license : See [*License].
+
+section : Hello wry
+
+	Following long-standing tradition, here is a wry script that prints a message
+	to the screen. The code itself is only one line, but a well-formed wry file
+	includes not only code, but also prose for documentation:
+
+	``` : K&R homage
+		project : My first wry script
+		<<<
+		print("Hello, world!")
+		>>>
+
+section : Types and variables
+
+	Wry has 5 familiar scalar types, listed in the {table}[*Wry types] below with
+	examples of corresponding literals.
+
+	+++ : Wry types
+		Type  	:: Examples
+		Int   	:: 42, 0, -17
+		Float 	:: 4.5, -18.4, 1e-6
+		Bool  	:: true, false
+		String	:: "Hello, world!"
+		Null  	:: null
+
+	Variables are not declared. They come into existence when a value is assigned
+	to a name, commonly done with an assignment operator `=`.
+
+	``` : Assignment statement example
+		age = 42
+		speed = 15.7
+		title = "learning wry"
+
+	A variable's type derives from the value assigned to it and changes when
+	a new value is assigned.
+
+	``` : Changing a variable's type
+		age = 42     	// Variable `age` is of type Int.
+		age = "young"	// Now `age` is of type String.
+
+	In addition to the scalar types, Wry has a compound type: `Array`.
+
+section : Operators
+
+	!!!
+		Do we want a big table of operator precedence? That does need to exist,
+		eventually, but maybe not here.
+
+section : Arrays
+
+section : Scope
+
+section : Control flow
+
+	Wry has `if` blocks for branching and `do` and `for` blocks for looping. The
+	statements that form the body of an `if`, `do`, or `for` block (really, any
+	block) must be identically indented.
+
+	section : Branching
+
+		To execute code branches conditionally, use the `if` block, optionally
+		followed by one or more `else if` blocks, optionally followed by a final
+		`else` block.
+
+		``` : `if` block example
+			if age < 42
+				comment = "whipper-snapper"
+				flagYoung = true
+			else if age < 65
+				comment = "still working"
+			else
+				comment = "codger status"
+
+	section : Looping
+
+		Wry has two blocks for looping: `do` and `for`. A `do` block executes its
+		statements at least 1 time; repeat executions are controlled by the
+		`continue` statement. Within a `do` block, the `continue` statement stops
+		the current iteration and causes execution to repeat from the top.
+
+		``` : `do` block example
+			age = 0
+			do
+				age += 1
+				...
+				if age != 42
+					continue
+				...   // Remainder of `do` block.
+
+		In the {example}[*`do` block example 1] above, the condition that
+		determines whether or not to repeat is checked and if it is met, the
+		`continue` statement causes execution to transfer to the top of the loop
+		and the remainder of the block will be skipped.
+
+		The above could be written with the condition at the top, as in the
+		{example}[*`do` block example 2] below.
+
+		``` : `do` block with condition check at top
+			age = 0
+			do
+				if age != 42
+					...
+					age += 1
+					continue
+
+		Keywords `do` and `continue` can be followed with an optional single-line
+		statement--handy for initializing and incrementing loop indices. In the
+		prior example the initialization of `age`, rather than preceding the `do`
+		block, can be written following the `do` keyword and will only be executed
+		once: `do age = 0`; likewise, the statement to increment `age` can follow
+		the `continue` keyword: `continue age += 1`. This results in the
+		following:
+
+		``` : `do` and `continue` combined with loop index statements
+			do age = 0
+				if age != 42
+					...
+					continue age += 1
+
+		Often the entire body of a `do` block will comprise, as above, a single
+		`if` block. To prevent excessive indentation it is common in such cases to
+		collapse the `do` and `if` to a single line, as shown below.
+
+		``` : `do if` example
+			count = 100
+			do if count
+				...
+				continue count -= 1
+
+		A `for` block loops over elements of an array, providing variables `key`
+		and `val` to access the current element at each iteration.
+
+		``` : `for` block example
+			for attribs
+				print('key is ' + key + ', value is ' + val)
+
+		As with `do` blocks, an inner `if` block that encompasses the entire loop
+		body can be collapsed to the same line as the `for` keyword. Likewise, a
+		`continue` statement will stop the current iteration and proceed
+		immediately with the next. However, outside of this "short-circuit"
+		situation, the `continue` statement is not needed. Unlike a `do` block
+		which, without the `continue` statement, will only execute one time, the
+		`for` block will automatically iterate the entire array whether a
+		`continue` statement is present or not.
+
+	section : Transferring control
+
+		Use a `break` statement to immediately exit a `do` or `for` loop. An
+		optional single-line statement can be included with the `break`
+		keyword.
+
+		``` : `break` example
+			found = false
+			for names
+				if val == 'Ted'
+					break found = true
+
+		Both `for` and `do` blocks can be followed with a `then` block, which will
+		execute after the loop, but only if the loop ran completely and no `break`
+		statement transferred control out of the loop prematurely. In other words,
+		`break` transfers control outside the loop _and_ after any trailing
+		`then` block.
+
+		``` : `then` example
+			found = false
+			for names
+				if val == 'Ted'
+					break found = true
+			then
+				...   // Executes if no 'break' occurs above.
+			...   // `break` will transfer control here.
+
+	section : Labels
+
+		When loops are nested, it can be desirable to `continue` or `break` from
+		an inner loop to an outer loop. To achieve this, a loop block can include
+		an optional label which can then be referenced from a `continue` or
+		`break` statement. Labels are created with `#` prefix; referenced with `@`
+		prefix.
+
+		``` Loop labels
+			do i=0 if i<40 #outer
+				do j=0 if j<30
+					...
+					if <condition> continue @outer i += 1
+					...   // Remainder of inner j-loop.
+				...   // Remainder of outer i-loop.
+
+		In the {example}[*Loop labels] above, the outer loop is labeled with
+		`#outer` and if the inner condition is met, the `continue @outer`
+		statement will cause control to skip the remainder of both inner (j) and
+		outer (i) loops and resume with the next iteration of the outer-most loop.
+
+		Labels are also used to distinguish the automatic `key` and `val`
+		variables in nested `for` loops. For example, given a multi-dimensional
+		array of books grouped by category:
+
+		``` : `key` and `val` within nested `for` loops
+			for categories #cat
+				// Outer loop `key` is the category name; `val` is an array of book
+				// objects.
+				...
+				for val
+					// Inner loop `key` is an Int (not used), and `val` is a book
+					// object. To access the outer `key` and `val`, prefix with
+					// `@cat`
+					...
+					print('book ' + val.name + ' is in category ' + @cat.key)
+
+	section : Early exit
+
+		Use a `guard` block to test for a condition which must be true in order to
+		continue execution. If the condition fails, the body of the `guard` block
+		will execute, and it must contain a statement, such as `continue` or
+		`break`, that transfers control out of, or to the next iteration of, the
+		current loop.
+
+		``` : `guard` block
+			do
+				guard <condition-that-must-be-true-to-proceed>
+					...   // Cleanup, error message, etc.
+					break
+				...   // Proceed assured that above guard condition was met.
+
+		Note: `guard` is also used to exit (or `return`) early from functions, as
+		described in the next section.
+
+section : Functions
+
+section : Chaining
+
+section : Scope revisited
+
+	!!!
+		Here can go into more detail on $obj, $arg, $pre, $cur, $out inside
+		functions.
+
+	```
+		Suppose object `b` has a function `g` defined, as does object `c`,
+		intending to override `b`'s function `g` with a modified definition.
+		Further suppose that function `f` is defined in object `d`.
+
+		a -> b -> c -> d -> f()
+
+		Inside of `f`, `$obj` will refer to the chain `a->b->c->d`; `$cur` will
+		point to `d`, where function `f` is defined; `$pre` will point to `c`,
+		which precedes `d` in the chain. If inside the body of `f` the function
+		`g` is called, then the same `$obj` will be bound to `g`, but now `$cur`
+		will point to `c`, where `g` is defined, and `$pre` will point to `b`.
+
+		when `f` executes:
+
+		+------+
+		| call | <-- $out, f's call site
+		+------+
+		|  a   |
+		|  b   |
+		|  c   | <-- $pre
+		|  d   | <-- $obj, $cur
+		+------+
+		| $arg |
+		+------+
+		| $loc |
+		+------+
+
+		when `g` is called from `f`:
+
+		+-------+
+		| call  | <-- f's call site
+		+-------+
+		| f obj | <-- f's object scope (same as g's)
+		+-------+
+		| f arg | <-- f's arguments
+		+-------+
+		| f loc | <-- $out, g's call site, f's local scope
+		+-------+
+		|  a    |
+		|  b    | <-- $pre
+		|  c    | <-- $cur
+		|  d    | <-- $obj
+		+-------+
+		| $arg  | <-- g's arguments
+		+-------+
+		| $loc  | <-- g'w local scope
+		+-------+
+
+section : Exceptions
+
+	!!!
+		Is this the place to talk about `defer`? Rename the section 'Error
+		handling' and cover both `defer` and exceptions?
+
+section : Names
+
+	!!!
+		Lay out the rules for valid names.

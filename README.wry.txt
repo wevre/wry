@@ -1,4 +1,4 @@
-project : HTML Element Composer
+project : wry-readme
 	author : Mike Weaver
 	created : 2018-06-13
 	copyright : © 2018 All rights reserved.
@@ -12,7 +12,7 @@ section : Grammar
 
 section : Types
 
-	There are (at least) seven types: `Integer`, `Float`, `Bool`, `String`,
+	There are (at least) seven types: `Int`, `Float`, `Bool`, `String`,
 	`Null`, `Array`, and `Function`. The `Array` type replaces what would be
 	arrays, dictionaries, class instances, and parameter lists in other
 	languages. It is an ordered map and behaves similarly to PHP's array type.
@@ -38,22 +38,26 @@ section : Types
 		employee = "John Smith"
 		flag = null
 
-	Those 5 simple types are scalars, whereas the `Array` type is a compound
+	Those simple types are scalars, whereas the `Array` type is a compound
 	object.
 
 section : Arrays
 
-	Arrays are an ordered hashmap. That means it preserves the order of the keys
-	as items are inserted into the array. (Implementing it means something like a
-	hashmap combined with a linked list, I'm going to call it a "sortmap".)
+	An array is an ordered hashmap, meaning it preserves order of keys as items
+	are inserted into the array.
+
+	!!!
+	 	Implementing an array means using a hashmap combined with a linked list,
+	 	going to callit a "sortmap".
 
 	To create an array, list out elements (keys and values) separated by commas.
-	A trailing comma is allowed, and in fact is often useful to coerce something
-	to an array. An array can be a simple list of other types (no keys), in which
-	case incrementing integer keys will automatically be applied. Or it can be
-	more like a dictionary with keys and values, separate by colons and commas.
-	Keys are of type `String` or `Int`, or expressions that evaluate to one of
-	these. Entries in the array can be retrieved by key.
+	A trailing comma is allowed, which simplifies code maintenance and can also
+	be usefule to coerce something to an array. An array can be a simple list of
+	other types (no keys), in which case incrementing integer keys will
+	automatically be applied. Or it can be more like a dictionary with keys and
+	values, separate by colons and commas. Keys are of type `String` or `Int`, or
+	expressions that evaluate to one of these. Entries in the array can be
+	retrieved by key.
 
 	```
 		employee = ('first': 'mike', 'last': 'weaver', 'empl-id': 1234, 10.5)
@@ -70,15 +74,18 @@ section : Arrays
 		```
 			(employee = 'first') : 'mike', ...
 
-	Which would be a syntax error. The first term in parenthesis is an assignment
-	which doesn't return a value so can't be used as a key in an array.
+		Which would be a syntax error. The first term in parenthesis is an
+		assignment which doesn't return a value so can't be used as a key in an
+		array.
 
 	An `Array` of items without keys is declared in a similar way:
 
 	```
 		cutoffs = (15.0, 25.0, 47.0)
 
-	The items in the array are accessed with a subscript operator that uses
+	These items would automatically receive integer keys 0, 1, and 2.
+
+	Items in the array are accessed with a subscript operator that uses
 	square brackets. Inside the brackets use an expression that evaluates to
 	either an `Int` or `String` that represents the key.
 
@@ -93,6 +100,9 @@ section : Arrays
 
 	```
 		employee.first   // equivalent to employee['first']
+
+	Items can be stored in an array with any string for the key, but dot
+	membership will only work for string keys that are also valid names.
 
 	!!! Experimental subscripts
 
@@ -128,7 +138,7 @@ section : Arrays
 			'age': 15
 		'mydata': ('name': 'mike', 'age': 15)
 
-	So when declaring keys, one can use a string, or an expression that evaluates
+	When declaring keys, one can use a string, or an expression that evaluates
 	to a string, followed by a colon. Or one can use a bare name (no quotes) and
 	an equals sign. Or one can use multiple lines and indentation to layout the
 	structure of the array. A tilde preceding a bare name converts it as follows:

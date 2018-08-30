@@ -63,7 +63,7 @@ section : Block markers
 			similarity between popping out of prose mode to some sort of code mode.
 			Or could use curly brackets with an equal sign around the embedded
 			text, which makes the equal sign "magic" inside curly braces. That
-			problem exists with SAM's approach, where equal sign is magin in the
+			problem exists with SAM's approach, where equal sign is magic in the
 			attribute parens.
 
 	+++ : Table of block markers
@@ -73,7 +73,7 @@ section : Block markers
 		$$$   	:: terminal session text, prose mode
 		<<<   	:: open or close code mode
 		>>>   	:: close or open code mode
-		+++   	:: tables, with `::` as column delimeter
+		+++   	:: tables, with `::` as column delimiter
 		"""   	:: block quote, prose mode
 		///   	:: comment block, code mode
 		===   	:: (maybe) embed block, prose mode
