@@ -7,14 +7,19 @@ project : learn wry
 section : Hello wry
 
 	Following long-standing tradition, here is a wry script that prints a message
-	to the screen. The code itself is only one line, but a well-formed wry file
-	includes not only code, but also prose for documentation:
+	to the screen. The code itself is only one line, but a wry file includes not
+	only code, but also prose for documentation (although the prose in the
+	example below is, admittedly, very minimal):
 
 	``` : K&R homage
 		project : My first wry script
 		<<<
 		print("Hello, world!")
 		>>>
+
+	A wry document starts out with prose, and code is inserted between `<<<` and `>>>`
+	markers. For the remainder of this document we will show wry code without
+	prose or markers.
 
 section : Types and variables
 
@@ -51,8 +56,6 @@ section : Operators
 	!!!
 		Do we want a big table of operator precedence? That does need to exist,
 		eventually, but maybe not here.
-
-section : Arrays
 
 section : Scope
 
