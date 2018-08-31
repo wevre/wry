@@ -1,4 +1,4 @@
-project : wry Documentation
+project : Wry Documentation
 	author : Mike Weaver
 	create-date : 2018-05-14
 	copyright : (c) 2018
@@ -15,7 +15,7 @@ section : Introduction
 	same team being a fully functional script. You might be reading this as
 	PDF or HTML output, which is fine, but to really understanding how a Wry
 	script works, it's best to read this in its raw, unprocessed, plain text
-	glory, which you can find on the {wry website}[https://wry-lang.org].
+	glory, which you can find on the {Wry website}[https://wry-lang.org].
 
 	A Wry script is comprised of blocks of prose and blocks of code mixed
 	together in the same file.
@@ -68,7 +68,7 @@ print("hello, world")
 	Before we move on with other code examples, let's learn how a Wry script is
 	organized.
 
-section : Anatomy of a wry script
+section : Anatomy of a Wry script
 
 	A Wry script file is organized into hierarchical blocks. The outer-most
 	block by default is "root", and contains child blocks of prose and code.
@@ -167,4 +167,4 @@ section : Refering to code
 	be executed by the interpreter. Instead, when generating documentation for
 	this file, the above block will be shown as a code sample, perhaps with
 	syntax highlighting. Depending on your environment, you can include sample
-	code from a variety of languages (not just wry) in your documentation.
+	code from a variety of languages (not just Wry) in your documentation.

@@ -1,4 +1,4 @@
-project : wry block markers
+project : Wry block markers
 	author : Mike Weaver
 	created : 2018-07-25
 
@@ -9,7 +9,7 @@ section : Introduction
 section : Block markers
 
 	The following are all the common punctuation characters (on US English
-	keyboards) for syntax, and how they are (or might be) used in wry.
+	keyboards) for syntax, and how they are (or might be) used in Wry.
 
 	!!!
 		Some things might want to include:
@@ -34,13 +34,13 @@ section : Block markers
 
 		*
 			SAM uses the marker >>> as in insert for, as an example, an image. In
-			wry this symbol is reserved for switching between prose and code mode,
+			Wry this symbol is reserved for switching between prose and code mode,
 			so can't be used for this purpose. But another marker could be used.
 			Or, accomplish this another way, with a reference in text to a field
 			that defines an image.
 
 			```
-				Some wry prose with image reference [*image name].
+				Some Wry prose with image reference [*image name].
 
 				image name : my_image.png
 

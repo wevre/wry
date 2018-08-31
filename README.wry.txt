@@ -1,4 +1,4 @@
-project : wry-readme
+project : Wry readme
 	author : Mike Weaver
 	created : 2018-06-13
 	copyright : © 2018 All rights reserved.
@@ -163,7 +163,7 @@ section : Arrays
 	!!!
 		This of course screams out to use records.
 
-!!! Continue converting this into wry prose.
+!!! Continue converting this into Wry prose.
 
 A bare expression (something that is not part of an assignment statement) will act as an
 assignment into the local scope, using the next integer key.
@@ -618,9 +618,9 @@ concatenating 'name' and 'value'. The caller can pass in extra attributes (such 
 or "onclick") via 'xattr'. And so on (you can go check it out in
 [wCommon](https://github.com/wevrem/wCommon) for more details).
 
-And here is how it could look in wry:
+And here is how it could look in Wry:
 
-  	// in wry
+  	// in Wry
   	func addButtons   // pass in an array of button objects
  			cp->beginElement('p')
  			for $args
@@ -654,7 +654,7 @@ will accept an array of attributes, but if instead the caller passes a string, i
 interpreted as a "class" attribute and an attribute array constructed from it.
 This makes it convenient to call the function with a
 simple class name (which will often be the use case) instead of having to construct an
-array around that class name. In wry we don't have to do those sorts of gymnastics.
+array around that class name. In Wry we don't have to do those sorts of gymnastics.
 
   	// in PHP
   	protected static function getElement($elem, $attribs=[], $content='', $close=false) {
@@ -669,7 +669,7 @@ array around that class name. In wry we don't have to do those sorts of gymnasti
  			}
   	}
 
-  	// in wry
+  	// in Wry
   	func getElement   //(elem, class?, attribs?, content?, close?=false)
  			if class attribs.class = class
  			registerClass(attribs.class)
@@ -753,7 +753,7 @@ The `comment` comments out the `do` and all the code belonging to the `do` block
 
 (2018--07-20) Alternatively, a comment block could be introduced by ///.
 
-I've used # as a comment character in some places when writing about wry. But  I
+I've used # as a comment character in some places when writing about Wry. But  I
 think # needs to be reserved for labeling scopes and loops, so it is out as a
 comment character.
 

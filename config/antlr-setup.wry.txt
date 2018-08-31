@@ -6,7 +6,7 @@ section : Introduction
 
 	This document outlines the steps I took to install and use Antlr4 on my local
 	machine. So much time passes between opportunities to play around with
-	grammars and wry that I need help remembering what my environment was and the
+	grammars and Wry that I need help remembering what my environment was and the
 	choices I made.
 
 section : Install Antrl4
@@ -30,7 +30,7 @@ section : Install Antrl4
 
 section : Running Antlr4
 
-	The wry project home is ~/Documents/Programming/wry Project` (a sibling
+	The Wry project home is ~/Documents/Programming/wry Project` (a sibling
 	directory of Antlr4), under which is the `build` directory where generated
 	java class go. The grammars, including `TestDent`, live under the project
 	home in `wry-github/grammars`. Thus to compile, say, `TestDent` grammar,

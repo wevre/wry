@@ -5,7 +5,7 @@ project : readme-grammars
 section : Introduction
 
 	This directory contains Antlr grammars that I'm working on as part of the
-	wry project. A sister directory, named `references`, contains sample
+	Wry project. A sister directory, named `references`, contains sample
 	Antlr grammars for various languages, which I grabbed to study.
 
 section : Dent

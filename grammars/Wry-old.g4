@@ -1,7 +1,7 @@
 /*
 * Wry.g4
 *
-* ANTLR4 grammar for wry.
+* ANTLR4 grammar for Wry.
 *
 * Author: Mike Weaver
 * Created: 2017-03-15
