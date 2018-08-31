@@ -1,27 +1,28 @@
-project : learn wry
+project : Learn Wry
 	author : Mike Weaver
 	created : 2018-08-29
 	copyright : © 2018 All rights reserved.
 	license : See [*License].
 
-section : Hello wry
+section : Hello Wry
 
-	Following long-standing tradition, here is a wry script that prints a message
-	to the screen. The code itself is only one line, but a wry file includes not
+	Following long-standing tradition, here is a Wry script that prints a message
+	to the screen. The code itself is only one line, but a Wry file includes not
 	only code, but also prose for documentation (although the prose in the
-	example below is, admittedly, very minimal):
+	example below is, admittedly, very minimal and not a good example of
+	documentation):
 
 	``` : K&R homage
-		project : My first wry script
+		project : My first Wry script
 		<<<
-		print("Hello, world!")
+		print('hello, world')
 		>>>
 
-	A wry document starts out with prose, and code is inserted between `<<<` and `>>>`
-	markers. For the remainder of this document we will show wry code without
-	prose or markers.
+	A Wry document begins in prose. Code lives between `<<<` and `>>>` markers.
+	For the remainder of this document we will show Wry code on its own without
+	the surrounding prose or markers.
 
-section : Types and variables
+section : Simple types
 
 	Wry has 5 familiar scalar types, listed in the {table}[*Wry types] below with
 	examples of corresponding literals.
@@ -31,25 +32,84 @@ section : Types and variables
 		Int   	:: 42, 0, -17
 		Float 	:: 4.5, -18.4, 1e-6
 		Bool  	:: true, false
-		String	:: "Hello, world!"
+		String	:: 'hello, world'
 		Null  	:: null
 
-	Variables are not declared. They come into existence when a value is assigned
-	to a name, commonly done with an assignment operator `=`.
+section : Storing and retrieving values
 
-	``` : Assignment statement example
+	The most general way to store and retrieve values is to use the `:`
+	assignment operator and the `[]` lookup operator. These operators work with
+	any String or Int key to store and retrieve values in the current scope.
+
+	``` : Assignment example
+		'name' : 'Fred'	// Store string 'Fred' under string key 'name'
+		'age' : 42     	// Store integer 42 under string key 'age'
+		0 : 'zero'     	// Store string 'zero' under integer key 0
+
+	To retrieve a value, use the same key expression inside square brackets.
+
+	``` : Retrieving values
+		print('Hi ' + ['name'] + ',')
+		print('You are ' + ['age'] + ' years old.')
+		print('You have ' + [0] + ' cookies.')           // --A--
+
+	If a key is also a valid name, it can be used as a variable for storing and
+	retrieving values. When using variables, store values using the `=`
+	assignment operator, and retrieve with the variable name alone (no quotes).
+
+	``` : Using variables
+		name = 'Fred'
 		age = 42
-		speed = 15.7
-		title = "learning wry"
+		numCookies = 0
+		print('Hi ' + name + ',')
+		print('You are ' + age + ' years old.')
+		print('You have ' + [numCookies] + ' cookies')   // --B--
+		print('You have ' + [5-5] + ' cookies')          // --C--
 
-	A variable's type derives from the value assigned to it and changes when
-	a new value is assigned.
+	What is going on with those last two lines? The expression inside the
+	brackets is evaluated and in both cases produces an integer value of 0, which
+	is then used as a key to retrieve the string value 'zero' from the current
+	scope. The lines marked "A", "B", and "C" in the prior two examples all
+	produce the same result.
 
-	``` : Changing a variable's type
-		age = 42     	// Variable `age` is of type Int.
-		age = "young"	// Now `age` is of type String.
+section : Arrays
 
-	In addition to the scalar types, Wry has a compound type: `Array`.
+	In addition to the scalar types, Wry has a compound type: `Array`. Similar to
+	PHP, an array in Wry is an ordered map, which means it preserves the order of
+	items and their keys as they are inserted into the array. Keys must be of
+	type `String` or `Int`.
+
+	To create an array, assign values to keys in a comma-separated list, as in
+	the example below. Either `:` or `=` assignment operator can be used, with
+	the same rules about keys and variable names as described in the prior
+	section. Keys are optional and if omitted, incrementing integer keys will
+	automatically be applied.
+
+	``` : Creating an array
+		person = ( first = 'Joe', last = 'Smith', age = 42 )	// Using variables.
+		names = ( 'Tom', 'Harry', 'Fred', )                 	// Automatic keys 0, 1, 2.
+		cutoffs = ( 1 : 10.5, 2 : 21.5, 3 : 45.0, )         	// Explicit keys 1, 2, 3.
+
+	The first example assigns values to names with the `=` operator. The names
+	will be automatically converted to strings keys. The second example omits
+	keys entirely and integers values 0, 1, and 2 are automatically used. The
+	third example uses explicit integer keys with the `:` operator.
+
+	To retrieve values from an array, use `.` membership operator only for
+	variables, and `[]` subscript operator for any key expressions.
+
+	``` : Array lookup
+		print('Hi ' + person.first + ',')
+		print("You are " + person['age'] + " years old.")
+		print('One of your friends is ' + names[0] + '.')
+
+	Values in an array can be modified in an assignment statement using the same `.`
+	and `[]` syntax.
+
+	``` : Modifying an array
+		person.first = 'Fred'
+		names[1] = 'Sally'
+		cutoffs[] = 87.3   // Empty brackets adds to the end of the array.
 
 section : Operators
 
@@ -58,6 +118,11 @@ section : Operators
 		eventually, but maybe not here.
 
 section : Scope
+
+	!!!
+		current/local scope.
+		bare expressions create an entry in local scope with the next integer key
+		arrays can be treated as a temporary scope
 
 section : Control flow
 
@@ -241,7 +306,7 @@ section : Chaining
 section : Scope revisited
 
 	!!!
-		Here can go into more detail on $obj, $arg, $pre, $cur, $out inside
+		Here can go into more detail on $loc, $obj, $arg, $pre, $cur, $out inside
 		functions.
 
 	```

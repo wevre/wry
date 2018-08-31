@@ -11,71 +11,71 @@ abstract
 
 section : Introduction
 
-	Welcome to `wry`. This file serves as documentation for `wry` while at the 
-	same team being a fully functional `wry` script. You might be reading this as
-	PDF or HTML output, which is fine, but to really understanding how a `wry` 
-	script works, it's best to read this in its raw, unprocessed, plain text 
+	Welcome to Wry. This file serves as documentation for Wry while at the
+	same team being a fully functional script. You might be reading this as
+	PDF or HTML output, which is fine, but to really understanding how a Wry
+	script works, it's best to read this in its raw, unprocessed, plain text
 	glory, which you can find on the {wry website}[https://wry-lang.org].
 
-	A `wry` script is comprised of blocks of prose and blocks of code mixed 
+	A Wry script is comprised of blocks of prose and blocks of code mixed
 	together in the same file.
 
-	Prose is the text you write to explain and document your script. It's meant 
-	to be extremely readable in its raw form; and, by following some simple 
+	Prose is the text you write to explain and document your script. It's meant
+	to be extremely readable in its raw form; and, by following some simple
 	conventions, it can be serialized into other useful output such as XML, HTML,
 	or PDF.
 
-	Code is the set of instructions that will be executed by the interpreter. 
-	It's syntax is, understandably, more rigid than prose. But you have the 
-	flexibility in a `wry` script of building up your code in pieces, laying them
-	out in a logical way, and linking them together. Does this sound like 
-	{literate programming}[https://en.wikipedia.org/wiki/Literate_programming]? 
+	Code is the set of instructions that will be executed by the interpreter.
+	It's syntax is, understandably, more rigid than prose. But you have the
+	flexibility in a Wry script of building up your code in pieces, laying them
+	out in a logical way, and linking them together. Does this sound like
+	{literate programming}[https://en.wikipedia.org/wiki/Literate_programming]?
 	That's not an accident.
 
 section : Quick example
 
-	Let's look at a quick example, even before attempting to explain everything 
-	that is going on, with the venerable "Hello world". Everything you've read so
-	far is written in prose, but we need to switch to code. To switch into code 
+	Let's look at a quick example, even before attempting to explain everything
+	that is going on, with the venerable "hello, world". Everything you've read so
+	far is written in prose, but we need to switch to code. To switch into code
 	use the marker `>>>` or `<<<`; and to switch out use the other one.
 
-	Indentation is significant in a `wry` script, and the code markers are no 
-	exception: they must be indented at a level consistent with surrounding 
-	prose. Between the markers the indentation level of the code block resets to 
-	the left margin.
+	Indentation is significant in a Wry script, and the code markers are no
+	exception: they must be indented at a level consistent with surrounding
+	prose. Between the markers the indentation level of the code block may be
+	reset, if you so choose.
 
-	>>> Hello world example
+	<<< Hello world example
 
-print("Hello world")
+print("hello, world")
 
-	<<<
+	>>>
 
 	And we're back in prose mode again. Welcome back.
 
-	If you wanted to execute the above block, you would enter something similar 
+	To execute the above code block, you would enter something similar
 	to the following at the command line:
 
-	terminal : Submitting the "Hello world example" code block
+	$$$ : Submitting "Hello world example" code block
 		prompt : $
 		input : wry --block "Hello world example" $(SCRIPT_NAME)
-		output : Hello world
+		output : hello, world
 
 	!!!
 		The above "terminal" block is multi-purpose. In generated documentation it
-		displays styled as a sample terminal session. It can also function as a 
+		displays styled as a sample terminal session. It can also function as a
 		test script. See [*Test scripts].
 
-	Before we move on with other code examples, let's learn
-	how a `wry` script is organized.
+	Before we move on with other code examples, let's learn how a Wry script is
+	organized.
 
 section : Anatomy of a wry script
 
-	A `wry` script file is organized into hierarchical blocks. The outer-most 
+	A Wry script file is organized into hierarchical blocks. The outer-most
 	block by default is "root", and contains child blocks of prose and code.
 
-	Blocks are created by typing a name and then indenting the content of the 
-	block below that name. Blocks can optionally be given a title by typing a 
-	colon and title after the name. For example, you might divide your file into 
+	Blocks are created by typing a name and then indenting the content of the
+	block below that name. Blocks can optionally be given a title by typing a
+	colon and title after the name. For example, you might divide your file into
 	sections, each one written as a block, with titles for each section:
 
 	``` Sample section organization
@@ -85,8 +85,8 @@ section : Anatomy of a wry script
 			<stuff in the first chapter>
 
 	callout : Convenient titles
-		You can also designate a title with a named field within the block. For 
-		example, here is another way to lay out the sections in [*Sample section 
+		You can also designate a title with a named field within the block. For
+		example, here is another way to lay out the sections in [*Sample section
 		organization] that produces the same logical structure:
 
 		``` Section organization using named fields
@@ -100,58 +100,59 @@ section : Anatomy of a wry script
 
 				#stuff in Chapter 1
 
-		As demonstrated above, `title` is a named field within each `section` 
-		block. You can create any fields you want. By default, `wry` pays special 
-		attention to `title` fields on blocks, hence the convenience of providing 
+		As demonstrated above, `title` is a named field within each `section`
+		block. You can create any fields you want. By default, Wry pays special
+		attention to `title` fields on blocks, hence the convenience of providing
 		the title on the same line as the named block.
-		
-		###
-			Haven't really defined a `named field` yet, but used that term in the 
+
+		!!!
+			Haven't really defined a `named field` yet, but used that term in the
 			paragraph above.
 
 	Some blocks are defined with markers, rather than arbitrary names. A block of
-	sample code, for example, is created with a marker of three backticks 
-	````````. Just as with named blocks, you can provide titles for marked 
+	sample code, for example, is created with a marker of three backticks
+	````````. Just as with named blocks, you can provide titles for marked
 	blocks, but the colon is optional.
 
 	Many marked blocks also take "flavors" which are denoted in parenthesis after
-	the marker. For example, to create a sample code block with a title and also 
+	the marker. For example, to create a sample code block with a title and also
 	indicate that it should be treated as C code:
 
 	``` :
 		```(c) : Hello world example in C
+			#include <stdio.h>
 			void main() {
-				print("Hello world");
+				printf("Hello world");
 			}
 
 	Another type of block is executable code, or more simply a "code block". This
-	block has two markers, one to enter code and one to exit. Another important 
-	difference with a code block: inside the block, the indentation is reset to 
-	the left margin.
+	block has two markers, one to enter code and one to exit. Another important
+	difference with a code block: inside the block, the indentation can be reset
+	to the left margin.
 
 section : Code blocks
 
 section : Refering to code
 
-	It is expected that you will have lots to say about your script, so a `wry` 
+	It is expected that you will have lots to say about your script, so a Wry
 	file always starts out in prose mode. Sometimes you want to refer to code but
 	have the interpreter ignore it. In other words, you want to write about code,
-	not write code for execution. You can mark a block as code that should be 
-	displayed (not executed) with the marker ````````. That's three backticks in 
-	a row. Following that marker you can optionally indicate the language of the 
-	block, which can produce, depending on your setup, code with syntax 
+	not write code for execution. You can mark a block as code that should be
+	displayed (not executed) with the marker ````````. That's three backticks in
+	a row. Following that marker you can optionally indicate the language of the
+	block, which can produce, depending on your setup, code with syntax
 	highlighting, numbering, etc.
 
 	Here is an example:
 
 	```
 		``` wry
-			print("Hello world")
+			print("hello, world")
 
 	Which will look like this when you generate documentation:
 
 	``` wry
-		print("Hello world")
+		print("hello, world")
 
 	!!!
 		If you are viewing this file in it's raw form, meaning the original `.wry`
@@ -162,11 +163,8 @@ section : Refering to code
 		because it's a `reference` block and by default is not included in the
 		documentation.)
 
-	This looks very similar to the "Hello world example" above, but it will not 
+	This looks very similar to the "Hello world example" above, but it will not
 	be executed by the interpreter. Instead, when generating documentation for
-	this file, the above block will be shown as a code sample, perhaps with 
-	syntax highlighting. Depending on your environment, you can include sample 
+	this file, the above block will be shown as a code sample, perhaps with
+	syntax highlighting. Depending on your environment, you can include sample
 	code from a variety of languages (not just wry) in your documentation.
-	
-	
-
