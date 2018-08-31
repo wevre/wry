@@ -1,4 +1,5 @@
 project : Learn Wry
+
 	author : Mike Weaver
 	created : 2018-08-29
 	copyright : © 2018 All rights reserved.
@@ -18,9 +19,11 @@ section : Hello Wry
 		print('hello, world')
 		>>>
 
-	A Wry document begins in prose. Code lives between `<<<` and `>>>` markers.
-	For the remainder of this document we will show Wry code on its own without
-	the surrounding prose or markers.
+	A typical Wry document begins in prose and code is written between `<<<` and `>>>`
+	markers. For the remainder of this document we will show Wry code on its own
+	without the surrounding prose or markers. To learn more about Wry prose, see
+	{Introduction to Wry}[*intro.wry]. Or just study the structure of this
+	document, which itself is valid Wry prose.
 
 section : Simple types
 
@@ -37,92 +40,151 @@ section : Simple types
 
 section : Storing and retrieving values
 
-	The most general way to store and retrieve values is to use the `:`
-	assignment operator and the `[]` lookup operator. These operators work with
-	any String or Int key to store and retrieve values in the current scope.
+	To store values in the current scope, use the assignment operator `=`. On the
+	left side provide a key in the form of a variable or a key expression. A "key
+	expression" is an expression enclosed in brackets that evaluates to a string
+	or integer. A variable is a name which must start with a letter or underscore
+	and must not contain special characters. You don't put quotes around it, but
+	a variable is treated as a string key.
 
-	``` : Assignment example
-		'name' : 'Fred'	// Store string 'Fred' under string key 'name'
-		'age' : 42     	// Store integer 42 under string key 'age'
-		0 : 'zero'     	// Store string 'zero' under integer key 0
+	!!!
 
-	To retrieve a value, use the same key expression inside square brackets.
+		<variable> = <value> is the same as ['<variable>'] = <value>
+
+	``` : Setting values
+		name = 'Fred'     	// Store 'Fred' using key 'name'
+		['age'] = 42      	// Store 42 using key 'age'
+		hasCookies = false	// Store false using key 'hasCookies'
+		[0] = 'zero'      	// Store 'zero' using key 0
+		15                	// Store 15 using key 1
+
+	A statement that is a bare expression, such as the final line in the example
+	above, will be stored in the current scope with the next available integer
+	key (in this case 1, since 0 has already been used).
+
+	To refer to a value stored in the current scope use a variable or a key
+	expression.
 
 	``` : Retrieving values
 		print('Hi ' + ['name'] + ',')
-		print('You are ' + ['age'] + ' years old.')
-		print('You have ' + [0] + ' cookies.')           // --A--
-
-	If a key is also a valid name, it can be used as a variable for storing and
-	retrieving values. When using variables, store values using the `=`
-	assignment operator, and retrieve with the variable name alone (no quotes).
-
-	``` : Using variables
-		name = 'Fred'
-		age = 42
-		numCookies = 0
-		print('Hi ' + name + ',')
 		print('You are ' + age + ' years old.')
-		print('You have ' + [numCookies] + ' cookies')   // --B--
-		print('You have ' + [5-5] + ' cookies')          // --C--
+		print('You have ' + [0] + ' cookies.')     	// --A--
+		print('You have ' + [5-5] + ' cookies.')   	// --B--
 
-	What is going on with those last two lines? The expression inside the
-	brackets is evaluated and in both cases produces an integer value of 0, which
-	is then used as a key to retrieve the string value 'zero' from the current
-	scope. The lines marked "A", "B", and "C" in the prior two examples all
-	produce the same result.
+	Some things to note:
+
+	1.
+
+		We switched between a variable and a key expression when setting and
+		retrieving `name` and `age`. We have the option to use either syntax
+		because those string keys are valid names. With integer keys, however, or
+		with string keys that are not valid names, or any expression more complex
+		than a single value, we can only use key expressions.
+
+	2.
+
+		Line B shows an example of a key expression that uses a more "complex"
+		expression inside the square brackets. It produces the same result as line
+		A.
+
+	3.
+
+		What do you think would happen if you toggled the use of brackets in the
+		previous example?
+
+		``` : Fun with brackets
+			print('Hi ' + 'name' + ',')
+			print('You are ' + [age] + ' years old.')
+			print('You have ' + 0 + ' cookies.')
+			print('You have ' + 5-5 + ' cookies.')
 
 section : Arrays
 
-	In addition to the scalar types, Wry has a compound type: `Array`. Similar to
-	PHP, an array in Wry is an ordered map, which means it preserves the order of
-	items and their keys as they are inserted into the array. Keys must be of
-	type `String` or `Int`.
+	In addition to the scalar types, Wry has a compound type: `Array`. An array
+	is an ordered map, which means it preserves the order of its key-value pairs as
+	they are added. Keys must be of type `String` or `Int`.
 
-	To create an array, assign values to keys in a comma-separated list, as in
-	the example below. Either `:` or `=` assignment operator can be used, with
-	the same rules about keys and variable names as described in the prior
-	section. Keys are optional and if omitted, incrementing integer keys will
-	automatically be applied.
+	The most general way to create an array is with an array block. Write a
+	variable or a key expression followed by indented assignment statements. As
+	mentioned above, bare expressions generate automatic integer keys.
+
+	``` : Array block creation
+		person
+			first = 'Joe'
+			last = 'Smith'
+			age = 42
+		['names']
+			'Tom'  	// These bare expressions
+			'Harry'	// will automatically be
+			'Fred' 	// assigned keys 0, 1, 2.
+		cutoffs
+			[1] = 10.5
+			[2] = 21.5
+			[3] = 45.0
+
+	In the statements above, each about-to-be-created array as considered the
+	"current scope" for the the assignment statements that follow. Non-assignment
+	statements can be used in the array block as well, such as branching or
+	looping statements which are described in the [*Control flow] section below.
+
+	Alternatively, an array can be created "in-line" with a comma-separated list
+	of assignments. The following lines produce the same results as above. With
+	inline array assignment, parenthesis are needed because `=` has higher
+	precedence than `,`.
 
 	``` : Creating an array
-		person = ( first = 'Joe', last = 'Smith', age = 42 )	// Using variables.
-		names = ( 'Tom', 'Harry', 'Fred', )                 	// Automatic keys 0, 1, 2.
-		cutoffs = ( 1 : 10.5, 2 : 21.5, 3 : 45.0, )         	// Explicit keys 1, 2, 3.
+		person = ( first = 'Joe', last = 'Smith', age = 42 )
+		['friends'] = ( 'Tom', 'Harry', 'Fred' )
+		cookies = ( [1] = 10, [2] = 21, [3] = 45, )   // Trailing commas OK.
 
-	The first example assigns values to names with the `=` operator. The names
-	will be automatically converted to strings keys. The second example omits
-	keys entirely and integers values 0, 1, and 2 are automatically used. The
-	third example uses explicit integer keys with the `:` operator.
-
-	To retrieve values from an array, use `.` membership operator only for
-	variables, and `[]` subscript operator for any key expressions.
+	To retrieve values from an array, use `.` membership operator with variables,
+	or, more generally, use a key expression as a subscript operator.
 
 	``` : Array lookup
 		print('Hi ' + person.first + ',')
 		print("You are " + person['age'] + " years old.")
-		print('One of your friends is ' + names[0] + '.')
+		print('One of your friends is ' + friends[0] + '.')
 
-	Values in an array can be modified in an assignment statement using the same `.`
-	and `[]` syntax.
+	You can modify an array after creation. The most general approach is to use a
+	`with` block to "re-open" the array scope for additional assignment
+	statements (and non-assignment statements).
+
+	``` : `with` block
+		with person
+			first = 'Fred'
+			last = 'Brown'
+		with ['friends']
+			[1] = 'Sally'
+		with cookies
+			87   // Missing key; will use next integer key.
+
+	!!! : `with` with non-array
+
+		What happens if one of these exists but is not an array? Is it converted
+		silently into an array? Does the original value get index 0?
+
+	The same results can be achieved with `=` assignment operator and `.` or
+	subscript syntax on the array. The example below uses different combinations
+	of variables and key expressions.
 
 	``` : Modifying an array
-		person.first = 'Fred'
-		names[1] = 'Sally'
-		cutoffs[] = 87.3   // Empty brackets adds to the end of the array.
+		person['first'] = 'Fred'
+		['person'].last = 'Brown'
+		['names'][1] = 'Sally'
+		cookies[] = 87   // Missing key; will use next integer key.
+
+	To remove a value from an array, set it to `null`. The same technique removes
+	values from the current scope.
+
+	``` : Removing a value from an array
+		friends[2] = null   // So long, Fred.
+		cookies = null
 
 section : Operators
 
 	!!!
 		Do we want a big table of operator precedence? That does need to exist,
 		eventually, but maybe not here.
-
-section : Scope
-
-	!!!
-		current/local scope.
-		bare expressions create an entry in local scope with the next integer key
-		arrays can be treated as a temporary scope
 
 section : Control flow
 
@@ -139,7 +201,7 @@ section : Control flow
 		``` : `if` block example
 			if age < 42
 				comment = "whipper-snapper"
-				flagYoung = true
+				young = true
 			else if age < 65
 				comment = "still working"
 			else
@@ -148,7 +210,7 @@ section : Control flow
 	section : Looping
 
 		Wry has two blocks for looping: `do` and `for`. A `do` block executes its
-		statements at least 1 time; repeat executions are controlled by the
+		statements at least 1 time; repeat executions are triggered by the
 		`continue` statement. Within a `do` block, the `continue` statement stops
 		the current iteration and causes execution to repeat from the top.
 
@@ -161,15 +223,15 @@ section : Control flow
 					continue
 				...   // Remainder of `do` block.
 
-		In the {example}[*`do` block example 1] above, the condition that
+		In the {example}[*`do` block example] above, the condition that
 		determines whether or not to repeat is checked and if it is met, the
 		`continue` statement causes execution to transfer to the top of the loop
 		and the remainder of the block will be skipped.
 
 		The above could be written with the condition at the top, as in the
-		{example}[*`do` block example 2] below.
+		{example}[*`do` block with top condition check] below.
 
-		``` : `do` block with condition check at top
+		``` : `do` block with top condition check
 			age = 0
 			do
 				if age != 42
@@ -205,6 +267,11 @@ section : Control flow
 		and `val` to access the current element at each iteration.
 
 		``` : `for` block example
+			attribs
+				class = 'warn'
+				title = 'Caution'
+				content = 'Cookies may contain peanuts'
+				level = 5
 			for attribs
 				print('key is ' + key + ', value is ' + val)
 
@@ -249,25 +316,27 @@ section : Control flow
 		When loops are nested, it can be desirable to `continue` or `break` from
 		an inner loop to an outer loop. To achieve this, a loop block can include
 		an optional label which can then be referenced from a `continue` or
-		`break` statement. Labels are created with `#` prefix; referenced with `@`
-		prefix.
+		`break` statement. A label, like a variable, is a name that must start
+		with a letter or underscore and must not contain special characters.
+		Labels are created with `#` prefix; referenced with `@` prefix.
 
 		``` Loop labels
 			do i=0 if i<40 #outer
 				do j=0 if j<30
 					...
-					if <condition> continue @outer i += 1
+					if <condition> continue i += 1 @outer
 					...   // Remainder of inner j-loop.
 				...   // Remainder of outer i-loop.
 
 		In the {example}[*Loop labels] above, the outer loop is labeled with
-		`#outer` and if the inner condition is met, the `continue @outer`
-		statement will cause control to skip the remainder of both inner (j) and
-		outer (i) loops and resume with the next iteration of the outer-most loop.
+		`#outer` and if the inner condition is met, the `continue i += 1 @outer`
+		statement will increment `i` and then cause control to skip the remainder
+		of both inner (j) and outer (i) loops and resume with the next iteration
+		of the outer-most loop.
 
-		Labels are also used to distinguish the automatic `key` and `val`
-		variables in nested `for` loops. For example, given a multi-dimensional
-		array of books grouped by category:
+		Labels are also used to distinguish the automatic variables `key` and
+		`val` in nested `for` loops. For example, given a multi-dimensional array
+		of books grouped by category:
 
 		``` : `key` and `val` within nested `for` loops
 			for categories #cat
@@ -275,7 +344,7 @@ section : Control flow
 				// objects.
 				...
 				for val
-					// Inner loop `key` is an Int (not used), and `val` is a book
+					// Inner loop `key` is an integer (not used), and `val` is a book
 					// object. To access the outer `key` and `val`, prefix with
 					// `@cat`
 					...
@@ -295,6 +364,7 @@ section : Control flow
 					...   // Cleanup, error message, etc.
 					break
 				...   // Proceed assured that above guard condition was met.
+			...   // Failed guard condition transfers control to here.
 
 		Note: `guard` is also used to exit (or `return`) early from functions, as
 		described in the next section.
@@ -363,8 +433,3 @@ section : Exceptions
 	!!!
 		Is this the place to talk about `defer`? Rename the section 'Error
 		handling' and cover both `defer` and exceptions?
-
-section : Names
-
-	!!!
-		Lay out the rules for valid names.
