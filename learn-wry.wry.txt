@@ -180,11 +180,37 @@ section : Arrays
 		friends[2] = null   // So long, Fred.
 		cookies = null
 
-section : Operators
+section : Basic operators
 
 	!!!
+
 		Do we want a big table of operator precedence? That does need to exist,
 		eventually, but maybe not here.
+
+		Arithmetic operators (% remainder??, overflow?)
+
+		Assignment operators (including compound +=,etc. and conditional ?=)
+
+		Compound assignment operators (+=, etc.)
+
+		Comparison operators
+
+		Casting
+
+		Bitwise operators (should have higher precedence than comparison)
+
+		Ternary condition operator
+
+		Range operators
+
+		Logical operators
+
+		We won't talk about chaining -> or inheritance <- or argument binding <> or tags #, #[], @, @[], or expansion operator ~, or ~~ or keyPath expansion operator ~[]
+
+		Other operators: ?: (leave out middle) ?? null coalescing <=> comparison
+
+		What about string interpolation? Allow it with \[]?
+
 
 section : Control flow
 
