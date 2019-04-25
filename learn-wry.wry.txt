@@ -1,9 +1,8 @@
 project : Learn Wry
-
 	author : Mike Weaver
 	created : 2018-08-29
 	copyright : © 2018 All rights reserved.
-	license : See [*License].
+	license : See [*LICENSE].
 
 section : Hello Wry
 
@@ -19,11 +18,11 @@ section : Hello Wry
 		print('hello, world')
 		>>>
 
-	A typical Wry document begins in prose and code is written between `<<<` and `>>>`
-	markers. For the remainder of this document we will show Wry code on its own
-	without the surrounding prose or markers. To learn more about Wry prose, see
-	{Introduction to Wry}[*intro.wry]. Or just study the structure of this
-	document, which itself is valid Wry prose.
+	A typical Wry document begins in prose and code is written between `<<<` and
+	`>>>` markers. For the remainder of this document we will show Wry code on
+	its own without the surrounding prose or markers. To learn more about Wry
+	prose, see {Introduction to Wry}[*intro.wry]. Or just study the structure of
+	this document, which itself is valid Wry prose.
 
 section : Simple types
 
@@ -50,17 +49,18 @@ section : Storing and retrieving values
 	!!!
 
 		<variable> = <value> is the same as ['<variable>'] = <value>
+		and <value> is the same as [] = <value>
 
 	``` : Setting values
 		name = 'Fred'     	// Store 'Fred' using key 'name'
 		['age'] = 42      	// Store 42 using key 'age'
 		hasCookies = false	// Store false using key 'hasCookies'
 		[0] = 'zero'      	// Store 'zero' using key 0
-		15                	// Store 15 using key 1
+		15                	// Store 15 using key 1, same as `[] = 15`
 
 	A statement that is a bare expression, such as the final line in the example
 	above, will be stored in the current scope with the next available integer
-	key (in this case 1, since 0 has already been used).
+	key (in this case 1, since 0 was previously been used).
 
 	To refer to a value stored in the current scope use a variable or a key
 	expression.
@@ -78,8 +78,7 @@ section : Storing and retrieving values
 		We switched between a variable and a key expression when setting and
 		retrieving `name` and `age`. We have the option to use either syntax
 		because those string keys are valid names. With integer keys, however, or
-		with string keys that are not valid names, or any expression more complex
-		than a single value, we can only use key expressions.
+		with string keys that are not valid names, we must use a key expression.
 
 	2.
 
@@ -89,8 +88,7 @@ section : Storing and retrieving values
 
 	3.
 
-		What do you think would happen if you toggled the use of brackets in the
-		previous example?
+		What happens if you toggled the use of brackets in the previous example?
 
 		``` : Fun with brackets
 			print('Hi ' + 'name' + ',')
@@ -101,8 +99,8 @@ section : Storing and retrieving values
 section : Arrays
 
 	In addition to the scalar types, Wry has a compound type: `Array`. An array
-	is an ordered map, which means it preserves the order of its key-value pairs as
-	they are added. Keys must be of type `String` or `Int`.
+	is an ordered map, which means it preserves the order of its key-value pairs
+	as they are added. Keys must be of type `String` or `Int`.
 
 	The most general way to create an array is with an array block. Write a
 	variable or a key expression followed by indented assignment statements. As
@@ -122,10 +120,11 @@ section : Arrays
 			[2] = 21.5
 			[3] = 45.0
 
-	In the statements above, each about-to-be-created array as considered the
-	"current scope" for the the assignment statements that follow. Non-assignment
-	statements can be used in the array block as well, such as branching or
-	looping statements which are described in the [*Control flow] section below.
+	In the statements above, each about-to-be-created array is considered the
+	"current scope" for the the indented assignment statements that follow.
+	Non-assignment statements can be used in the array block as well, such as
+	branching or looping statements which are described in the [*Control flow]
+	section below.
 
 	Alternatively, an array can be created "in-line" with a comma-separated list
 	of assignments. The following lines produce the same results as above. With
@@ -159,9 +158,8 @@ section : Arrays
 			87   // Missing key; will use next integer key.
 
 	!!! : `with` with non-array
-
-		What happens if one of these exists but is not an array? Is it converted
-		silently into an array? Does the original value get index 0?
+		If one of those (like `person`) existed but wasn't already an array, then
+		it would be converted to an array with a warning.
 
 	The same results can be achieved with `=` assignment operator and `.` or
 	subscript syntax on the array. The example below uses different combinations
@@ -205,12 +203,18 @@ section : Basic operators
 
 		Logical operators
 
-		We won't talk about chaining -> or inheritance <- or argument binding <> or tags #, #[], @, @[], or expansion operator ~, or ~~ or keyPath expansion operator ~[]
+		We won't talk about chaining -> or inheritance <- or argument binding <>
+		or tags #, #[], @, @[], or expansion operator ~ (maybe we call this the
+		"bind" operator), or ~~ (perhaps the "splat" operator) or keyPath
+		expansion operator ~[]
 
-		Other operators: ?: (leave out middle) ?? null coalescing <=> comparison
+		Other operators: ?: (leave out middle), chaining those to create an
+		if-elseif-elseif-else structure ( ? : ? : ? : ); ?? null coalescing; <=>
+		comparison
 
-		What about string interpolation? Allow it with \[]?
-
+		What about string interpolation? Allow it with \[]? or \()? Speaking if
+		string interpolation, the latest changes to Swift (5, or maybe 4) have
+		some really well thought out handling of strings.
 
 section : Control flow
 
@@ -249,13 +253,13 @@ section : Control flow
 					continue
 				...   // Remainder of `do` block.
 
-		In the {example}[*`do` block example] above, the condition that
-		determines whether or not to repeat is checked and if it is met, the
-		`continue` statement causes execution to transfer to the top of the loop
-		and the remainder of the block will be skipped.
+		In the {example}[*`do` block example] above, the condition that determines
+		whether or not to repeat is checked and if it is met, the `continue`
+		statement causes execution to transfer to the top of the loop, skipping
+		the remainder of the loop.
 
-		The above could be written with the condition at the top, as in the
-		{example}[*`do` block with top condition check] below.
+		Suppose we re-structure the code and place the condition at the top, as in
+		the {example}[*`do` block with top condition check] below.
 
 		``` : `do` block with top condition check
 			age = 0
@@ -289,6 +293,14 @@ section : Control flow
 				...
 				continue count -= 1
 
+		!!! : collapsed do-if with initialization
+			What if we want to initialize on the do statement, and also collapse the if? Does it look like this:
+
+			```
+				do count=100 if count
+					...
+					continue count-1
+
 		A `for` block loops over elements of an array, providing variables `key`
 		and `val` to access the current element at each iteration.
 
@@ -305,8 +317,8 @@ section : Control flow
 		body can be collapsed to the same line as the `for` keyword. Likewise, a
 		`continue` statement will stop the current iteration and proceed
 		immediately with the next. However, outside of this "short-circuit"
-		situation, the `continue` statement is not needed. Unlike a `do` block
-		which, without the `continue` statement, will only execute one time, the
+		situation, the `continue` statement is not needed. Unlike a `do` block,
+		which without the `continue` statement will only execute one time, the
 		`for` block will automatically iterate the entire array whether a
 		`continue` statement is present or not.
 
@@ -341,40 +353,45 @@ section : Control flow
 
 		When loops are nested, it can be desirable to `continue` or `break` from
 		an inner loop to an outer loop. To achieve this, a loop block can include
-		an optional label which can then be referenced from a `continue` or
-		`break` statement. A label, like a variable, is a name that must start
-		with a letter or underscore and must not contain special characters.
-		Labels are created with `#` prefix; referenced with `@` prefix.
+		an optional label on the `do` or `for` keyword, which can then be
+		referenced from a `continue` or `break` statement. A label, like a
+		variable, is a name that must start with a letter or underscore and must
+		not contain special characters. Labels are created with `#` suffix on the
+		`do` or `for` keyword; referenced with `@` suffix on the `continue` or
+		`break` keyword.
+
+		!!!
+			Why use different symbols? Why not use # in both places?
 
 		``` Loop labels
-			do i=0 if i<40 #outer
+			do#outer i=0 if i<40
 				do j=0 if j<30
 					...
-					if <condition> continue i += 1 @outer
+					if <condition> continue@outer i += 1
 					...   // Remainder of inner j-loop.
 				...   // Remainder of outer i-loop.
 
 		In the {example}[*Loop labels] above, the outer loop is labeled with
-		`#outer` and if the inner condition is met, the `continue i += 1 @outer`
+		`#outer` and if the inner condition is met, the `continue@outer i += 1`
 		statement will increment `i` and then cause control to skip the remainder
 		of both inner (j) and outer (i) loops and resume with the next iteration
 		of the outer-most loop.
 
-		Labels are also used to distinguish the automatic variables `key` and
-		`val` in nested `for` loops. For example, given a multi-dimensional array
-		of books grouped by category:
+		To distinguish automatic `key` and `val` variables with nested loops, use
+		angle brackets and provide explicit variable names, in the form
+		`<key=name>`, on the `for` loop. For example, given a multi-dimensional
+		array of books grouped by category:
 
-		``` : `key` and `val` within nested `for` loops
-			for categories #cat
+		``` : Custom `key` and `val` within nested `for` loops
+			for<category=bookArray> categories
 				// Outer loop `key` is the category name; `val` is an array of book
 				// objects.
 				...
-				for val
+				for bookArray
 					// Inner loop `key` is an integer (not used), and `val` is a book
-					// object. To access the outer `key` and `val`, prefix with
-					// `@cat`
+					// object.
 					...
-					print('book ' + val.name + ' is in category ' + @cat.key)
+					print('book ' + val.name + ' is in category ' + category)
 
 	section : Early exit
 
@@ -397,15 +414,73 @@ section : Control flow
 
 section : Functions
 
-section : Chaining
+	!!!
+
+		Have to decide on syntax here.
+
+		```
+			// option 1
+			func a
+				...
+			// option 2
+			a = func
+				...
+			// inline?
+			a = { ... }
+			// and what about binding arguments during declaration?
+			func<args> a ...
+			a = func<args> ...
+			a = { ... }<args>
+
+		I think I'm liking the second option. Even though it looks like an
+		expression, it wouldn't be legal to combine it with other expressions:
+
+		```
+			a = 3 + func
+				...
+
+		would not work. In fact the equals sign is not needed at all
+
+		```
+			myFunc func<bound args>
+				...
+
+section : Chaining (or maybe "binding")
+
+	!!!
+
+		Something I've been thinking: the chain/bind operator introduces a new
+		scope for the purpose of object resolution:
+
+		```
+			a -> b
+
+		Means we first look inside `a` to attempt to resolve `b`. If there is a
+		`b` inside `a`, then that is what will be found and bound.
+
+		```
+			a -> f()
+
+		The `execute` operator `()` will have to have lower priority than `->`
+		because we first have to check for `f` inside of `a`, bind it, and then
+		execute the resulting function with it's just bound `$obj` scope.
+
+		I also want the ability to bind arguments without execution:
+
+		```
+			a -> f<...args...>
+
+
 
 section : Scope revisited
 
 	!!!
+
 		Here can go into more detail on $loc, $obj, $arg, $pre, $cur, $out inside
 		functions.
 
 	```
+
 		Suppose object `b` has a function `g` defined, as does object `c`,
 		intending to override `b`'s function `g` with a modified definition.
 		Further suppose that function `f` is defined in object `d`.
@@ -417,6 +492,12 @@ section : Scope revisited
 		which precedes `d` in the chain. If inside the body of `f` the function
 		`g` is called, then the same `$obj` will be bound to `g`, but now `$cur`
 		will point to `c`, where `g` is defined, and `$pre` will point to `b`.
+
+		!!!
+
+			Wow, that preceding paragraph is complicated. It made sense when I
+			wrote it, but now it just seems like word soup. The pictures below help
+			to show what is going on.
 
 		when `f` executes:
 
@@ -457,5 +538,64 @@ section : Scope revisited
 section : Exceptions
 
 	!!!
+
 		Is this the place to talk about `defer`? Rename the section 'Error
 		handling' and cover both `defer` and exceptions?
+
+section : Macros
+
+	After having studied Lisp and Julia and Clojure for a bit, what if we allowed
+	for an encoding of an expression, for example the conditional `3<a && 4<b`,
+	into an array, mirroring the syntax tree:
+
+	```
+		&&
+			<
+				3
+				a
+			<
+				4
+				b
+
+	The problem with that, syntactically, is symbols like `&&` and `<` are not
+	valid as keys. But we could turn them into key expressions.
+
+	```
+		['&&']
+			['<']
+				3
+				a
+			['<']
+				4
+				b
+
+	Which is fine. But maybe we have some sugar here to "escape" them.
+
+	```
+		`&&
+			`<
+				3
+				a
+			`<
+				4
+				b
+
+	Any string prefixed with a backtick is turned into a string key expression.
+
+	```
+		`word  =>  ["word"]
+
+	That could work for both assignment (l-values) and retrieval (r-values) and
+	allow one to use keywords and operators as array keys.
+
+	Back to the tree, this could then be passed to a function, say `eval` that
+	would turn the keys into a function call, passing the values as arguments.
+	Literally everything in wry could be coded up in a hierarchical array like
+	this. This means I have to implement operators and other things as functions
+	(which of course they will be) but those functions will have to be exposed to
+	the runtime in such a way that the user could call or override them, instead
+	of having them locked away accessible only to the interpreter.
+
+	This opens up operator overloading, right? If we set a function, `+`,
+	somewhere along the scope chain, then that function should be called instead
+	of the one provided by the system.
