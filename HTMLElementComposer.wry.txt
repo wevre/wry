@@ -4,6 +4,12 @@ project : HTML Element Composer
 	copyright : © 2018 All rights reserved.
 	license : See [*License].
 
+section : ToDo
+
+	One thing I added to wCommon/Composer is the ability to generate and then
+	store arbitrary HTML with keys, then recall them for composition into the
+	composer.
+
 section : Introduction
 
 	An HTML document is built using HTML elements. Elements include start and end
