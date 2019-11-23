@@ -31,11 +31,11 @@ section : Simple types
 
 	+++ : Wry types
 		Type  	:: Examples
-		Int   	:: 42, 0, -17
-		Float 	:: 4.5, -18.4, 1e-6
-		Bool  	:: true, false
-		String	:: 'hello, world'
-		Null  	:: null
+		int   	:: 42, 0, -17
+		float 	:: 4.5, -18.4, 1e-6
+		bool  	:: true, false
+		string	:: 'hello, world'
+		null  	:: null
 
 section : Storing and retrieving values
 
@@ -60,16 +60,16 @@ section : Storing and retrieving values
 
 	A statement that is a bare expression, such as the final line in the example
 	above, will be stored in the current scope with the next available integer
-	key (in this case 1, since 0 was previously been used).
+	key (in this case 1, since 0 was previously used).
 
 	To refer to a value stored in the current scope use a variable or a key
 	expression.
 
 	``` : Retrieving values
-		print('Hi ' + ['name'] + ',')
-		print('You are ' + age + ' years old.')
-		print('You have ' + [0] + ' cookies.')     	// --A--
-		print('You have ' + [5-5] + ' cookies.')   	// --B--
+		print('Hi \{['name']},')   	// this looks klunky, can it be `\['name']`?
+		print('You are \{age} years old.')
+		print('You have \{0} cookies.')     	// --A--
+		print('You have \{5-5} cookies.')   	// --B--
 
 	Some things to note:
 
@@ -83,24 +83,23 @@ section : Storing and retrieving values
 	2.
 
 		Line B shows an example of a key expression that uses a more "complex"
-		expression inside the square brackets. It produces the same result as line
-		A.
+		expression inside the brackets. It produces the same result as line A.
 
 	3.
 
-		What happens if you toggled the use of brackets in the previous example?
+		String interpolation is accomplished by wrapping expressions in \{}.
 
-		``` : Fun with brackets
-			print('Hi ' + 'name' + ',')
-			print('You are ' + [age] + ' years old.')
-			print('You have ' + 0 + ' cookies.')
-			print('You have ' + 5-5 + ' cookies.')
+	!!!
+		I'm thinking that if the expression is simple enough, the {} should be
+		optional. So `\{['name']}` could instead be `\['name']`, and \{age} could
+		simply be \age. You would only need the curly brackets if the expression
+		was confused with the surrounding text.
 
 section : Arrays
 
-	In addition to the scalar types, Wry has a compound type: `Array`. An array
+	In addition to the scalar types, Wry has a compound type: `array`. An array
 	is an ordered map, which means it preserves the order of its key-value pairs
-	as they are added. Keys must be of type `String` or `Int`.
+	as they are added. Keys must be of type `string` or `int`.
 
 	The most general way to create an array is with an array block. Write a
 	variable or a key expression followed by indented assignment statements. As
@@ -139,14 +138,118 @@ section : Arrays
 	To retrieve values from an array, use `.` membership operator with variables,
 	or, more generally, use a key expression as a subscript operator.
 
+	I want a way to mix in-line expressions with block expressions. When
+	expressions get really long we want a good way to break them up onto multiple
+	lines. So the idea is that within parenthesis we can break to multiple lines
+	and the indent level is reset until the closing parens.
+
+	``` : Alternative Array
+		person = (
+			first = 'Joe'
+			last = 'Smith'
+			age = 42
+		)
+
+	This allows us to use statements, such as `if` or `for` inside the array
+	expression. Of course in this situation we could drop the equals sign and the
+	wrapping parenthesis and achieve the same result. But when we are passing
+	arguments to functions, for example, then the wrapping parens are needed.
+
+	``` : Alternative Array with statements
+		person = (
+			first = 'Joe'
+			last = 'Smith'
+			if old
+				age = 42
+			else
+				age = 24
+		)
+
+	And it allows us to mix these in within expressions.
+
+	``` : Array in expression with statements
+		result = (
+			'Hello, '
+			person.first
+			' You are '
+			if old
+				42
+			else
+				24
+			' years old.'
+		) -> join('')
+
+	The general pattern is an opening parens followed by a new line opens a new
+	context which can contain statements, and the result will be an expression
+	collapsed back at the point where the parens was opened. If the context
+	(block) has a single statement, it can be promoted up to the same line as the
+	open parens:
+
+	```
+		r = a -> b -> c -> d()   // If this were a really long expression...
+
+		r = (
+			->
+				a
+				b
+				c
+				d()
+		)
+
+		r = ( ->
+			a
+			b
+			c
+			d()
+		)
+
+		if (condition1 and condition2 and condition3)
+			...
+
+		if ( and
+			condition1
+			condition2
+			condition3
+		)
+			...
+
+		f(key1=val1, key2=val2, key3=val3, ...)
+
+		f(
+			key1=val1
+			key2=val2
+			key3=val3
+			...
+		)
+
+		f<
+			...
+		>(
+			...
+		)
+
+	By this being a context and a statement block, control flow statements can be
+	interspersed, as well as line comments.
+
+	!!!
+		This presupposes that we have statments such as `->` and `and` that work
+		as a block statement. Probably also `.` should be a statement, so you can
+		have a chain of member lookup (like a key path lookup), and '+' for
+		joining strings.
+
 	``` : Array lookup
-		print('Hi ' + person.first + ',')
-		print("You are " + person['age'] + " years old.")
-		print('One of your friends is ' + friends[0] + '.')
+		print('Hi \{person.first},')
+		print("You are \{person['age']} years old.")
+		print('One of your friends is \{friends[0]}.')
 
 	You can modify an array after creation. The most general approach is to use a
 	`with` block to "re-open" the array scope for additional assignment
 	statements (and non-assignment statements).
+
+	!!!
+		I might change this keyword to `use` and reserve `with` for something
+		else, similar to how Python has `with` blocks that take care of init and
+		de-init.
 
 	``` : `with` block
 		with person
@@ -212,7 +315,7 @@ section : Basic operators
 		if-elseif-elseif-else structure ( ? : ? : ? : ); ?? null coalescing; <=>
 		comparison
 
-		What about string interpolation? Allow it with \[]? or \()? Speaking if
+		What about string interpolation? Allow it with \{}? Speaking of
 		string interpolation, the latest changes to Swift (5, or maybe 4) have
 		some really well thought out handling of strings.
 
@@ -311,14 +414,14 @@ section : Control flow
 				content = 'Cookies may contain peanuts'
 				level = 5
 			for attribs
-				print('key is ' + key + ', value is ' + val)
+				print('key is \{key}, value is \{val}')
 
 		As with `do` blocks, an inner `if` block that encompasses the entire loop
 		body can be collapsed to the same line as the `for` keyword. Likewise, a
 		`continue` statement will stop the current iteration and proceed
 		immediately with the next. However, outside of this "short-circuit"
-		situation, the `continue` statement is not needed. Unlike a `do` block,
-		which without the `continue` statement will only execute one time, the
+		situation, the `continue` statement is not needed. Unlike a `do` block
+		(which without the `continue` statement will only execute one time), the
 		`for` block will automatically iterate the entire array whether a
 		`continue` statement is present or not.
 
@@ -348,6 +451,20 @@ section : Control flow
 			then
 				...   // Executes if no 'break' occurs above.
 			...   // `break` will transfer control here.
+
+		``` : Another `then` example
+			confirmed = false
+			do
+				if !cond1
+					break
+				if !cond2
+					break
+				...   // Continue to check confirmation conditions.
+			then
+				confirmed = true
+			// `break` transfers here.
+			if confirmed
+				...   // Do something knowing we passed all the tests above.
 
 	section : Labels
 
@@ -383,11 +500,11 @@ section : Control flow
 		array of books grouped by category:
 
 		``` : Custom `key` and `val` within nested `for` loops
-			for<category=bookArray> categories
+			for category=bookarray in categories
 				// Outer loop `key` is the category name; `val` is an array of book
 				// objects.
 				...
-				for bookArray
+				for book in bookArray
 					// Inner loop `key` is an integer (not used), and `val` is a book
 					// object.
 					...

@@ -35,9 +35,9 @@ section : Introduction
 section : Quick example
 
 	Let's look at a quick example, even before attempting to explain everything
-	that is going on, with the venerable "hello, world". Everything you've read so
-	far is written in prose, but we need to switch to code. To switch into code
-	use the marker `>>>` or `<<<`; and to switch out use the other one.
+	that is going on, with the venerable "hello, world". Everything you've read
+	so far is written in prose, but we need to switch to code. To switch into
+	code use the marker `>>>` or `<<<`; and to switch out use the other one.
 
 	Indentation is significant in a Wry script, and the code markers are no
 	exception: they must be indented at a level consistent with surrounding
@@ -119,10 +119,10 @@ section : Anatomy of a Wry script
 	indicate that it should be treated as C code:
 
 	``` :
-		```(c) : Hello world example in C
+		``` (c) : Hello world example in C
 			#include <stdio.h>
 			void main() {
-				printf("Hello world");
+				printf("Hello, world");
 			}
 
 	Another type of block is executable code, or more simply a "code block". This
@@ -146,12 +146,12 @@ section : Refering to code
 	Here is an example:
 
 	```
-		``` wry
+		``` (wry)
 			print("hello, world")
 
 	Which will look like this when you generate documentation:
 
-	``` wry
+	``` (wry)
 		print("hello, world")
 
 	!!!

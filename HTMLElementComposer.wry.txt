@@ -13,11 +13,11 @@ section : ToDo
 section : Introduction
 
 	An HTML document is built using HTML elements. Elements include start and end
-	tags, attributes and content. Content can be text or child elements, nested
-	to arbitrary levels. See {W3C HTML syntax}[*elem-url].
+	tags, attributes and content. Valid content includes text and child elements,
+	interspersed and nested to arbitrary levels. See {W3C HTML
+	syntax}[*elem-url].
 
-	link : elem-url
-		https://www.w3.org/TR/html5/syntax.html
+	elem-url : https://www.w3.org/TR/html5/syntax.html
 
 	HTMLElementComposer, or Composer for short, is an object to help compose
 	proper HTML. Composer keeps track of nested elements. It can indent the
@@ -57,20 +57,20 @@ section : Creating an element
 
 	>>> Element functions
 
-func getElement   // ([elem], attribs=(), content='', close=false)
+func getElement   ///([elem], attribs=(,), content='', close=false)
 	$arg.elem ?= $arg[0]
 	guard elem
 		return
-	'<' + elem
+	'<\{elem}'
 	for attribs
-		' ' + key + '="' + val + '"'
+		' \{$key}="\{$val}"'
 	if isEmptyElement(elem)   // See [*Note static]
 		' />'
 	else
 		'>'
 		content
 		if close
-			'</' + elem + '>'
+			'</\{elem}>'
 	return $loc->concat()   // See [*Note loc concat]
 
 	<<<
@@ -132,26 +132,26 @@ func getElement   // ([elem], attribs=(), content='', close=false)
 
 	<<< Element functions
 
-func beginElement   // ([elem], class=nil, attribs=(), content='')
+func beginElement   ///([elem], class=nil, attribs=(,), content='')
 	$arg.elem ?= $arg[0]
 	guard elem
 		return
 	if isEmptyElement(elem) with
-		'`beginElement` called with void element "' + elem + '".'
+		'`beginElement` called with void element "\{elem}".'
 		'Use `addElement` instead.'
 		throw(msg=$loc->concat(sep=" "))
 	if class
 		attribs['class'] = class
 	tagStack->push(elem)   // See [*Note writing variables]
 	<*Handle indentation>
-	store[] = getElement(elem, ~attribs, ~content)
+	$obj.store[] = getElement(elem, ~attribs, ~content)
 
 func endElement
 	elem = tagStack->pop()
 	guard elem
 		throw (msg='Too many calls to endElement')
 	<*Handle indentation>
-	store[] = '</' + elem + '>'
+	$obj.store[] = '</\{elem}>'
 
 func addElement   // ([elem], class=nil, attribs=(), content='')
 	$arg.elem ?= $arg[0]
@@ -160,18 +160,18 @@ func addElement   // ([elem], class=nil, attribs=(), content='')
 	if class
 		attribs['class'] = class
 	<*Handle indentation>
-	store[] = getElement(elem, ~attribs, ~content, close: true)
+	$obj.store[] = getElement(elem, ~attribs, ~content, close: true)
 
 func addCustom   // ([string])
 	$arg.string ?= $arg[0]
-	store[] = string
+	$obj.store[] = string
 
 func getHTML   // (reset=true)
 	guard tagStack->isEmpty()
 		throw (msg='There are unclosed elements')
 	reset ?= true
 	defer if reset
-		$obj.store = ()
+		$obj.store = (,)
 	return store->concat()
 
 	>>>
@@ -252,7 +252,7 @@ HTMLElementComposer
 
 	<<< Internal variables
 store = ''
-tagStack = ()
+tagStack = (,)
 	>>>
 
 section : Indentation
@@ -277,9 +277,8 @@ func getIndent
 	guard fIndent
 		return
 	if store   // Add a newline if `store` contains existing output.
-		"\n"
-	_i = 0
-	do _i < tagStack->count()
+		'\n'
+	do _i = 0 if _i < tagStack->count()
 		indentChar
 		continue _i += 1
 	return $loc->concat()
